@@ -1,0 +1,71 @@
+{
+  "enc3.0": {
+    "branch0": {
+      "vessel": 0.4846,
+      "radius": 0.0043,
+      "intensity": 0.0711,
+      "all": 0.487,
+      "std": 0.4376
+    },
+    "branch1": {
+      "vessel": 0.0808,
+      "radius": 0.0065,
+      "intensity": 0.0006,
+      "all": 0.0943,
+      "std": 0.4529
+    },
+    "branch2": {
+      "vessel": 0.1367,
+      "radius": 0.0003,
+      "intensity": 0.0492,
+      "all": 0.1458,
+      "std": 0.4759
+    }
+  },
+  "enc4.0": {
+    "branch0": {
+      "vessel": 0.2096,
+      "radius": 0.0017,
+      "intensity": 0.0008,
+      "all": 0.2223,
+      "std": 0.4833
+    },
+    "branch1": {
+      "vessel": 0.1698,
+      "radius": 0.0,
+      "intensity": 0.0054,
+      "all": 0.1723,
+      "std": 0.4741
+    },
+    "branch2": {
+      "vessel": 0.004,
+      "radius": 0.0022,
+      "intensity": 0.0026,
+      "all": 0.0115,
+      "std": 0.4106
+    }
+  },
+  "enc5.0": {
+    "branch0": {
+      "vessel": 0.0533,
+      "radius": 0.0063,
+      "intensity": 0.0065,
+      "all": 0.0717,
+      "std": 0.4903
+    },
+    "branch1": {
+      "vessel": 0.0935,
+      "radius": 0.0007,
+      "intensity": 0.0,
+      "all": 0.0958,
+      "std": 0.4584
+    },
+    "branch2": {
+      "vessel": 0.0053,
+      "radius": 0.0052,
+      "intensity": 0.0108,
+      "all": 0.0213,
+      "std": 0.3715
+    }
+  }
+}

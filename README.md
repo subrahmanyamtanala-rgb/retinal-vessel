@@ -12,7 +12,10 @@ pixel choose how much local, global and directional context it uses.
 > * **Router fix** ([`results/drive_ac/`](results/drive_ac/README.md)): a balance loss, sharpening, temperature
 >   annealing and branch dropout fix the collapse. Routing is now per-pixel and follows the vessels, not image
 >   position. Segmentation is unchanged (F1 0.821), so the gap to the U-Net remains.
-> * **Still to do:** full-schedule GPU runs.
+> * **CAT block at 1/4** ([`results/drive_q/`](results/drive_q/README.md)): routing at 1/4 traces the vessel tree
+>   (r = 0.70 with vessel density). It raises clDice (+0.003 against a fixed equal mix of branches) but not F1 or AUC.
+>   No CAT-Net variant beats the U-Net at this budget, and the differences between variants are close to seed noise.
+> * **Still to do:** full-schedule GPU runs and cross-dataset tests.
 
 ## Why context-adaptive?
 
@@ -127,6 +130,7 @@ Training writes `config.json`, `history.json`, `best.pt` (best validation F1), `
 | `catnet` | 15.7 M | default; widths 32–320, 2+2 CAT blocks |
 | `catnet-l` | 55.2 M | large; widths 48–512, 2+4 CAT blocks |
 | `catnet-s-ac` | 2.9 M | `catnet-s` + branch dropout; use with the `--router-*` losses below |
+| `catnet-s-q` | 3.1 M | `catnet-s-ac` + 1 CAT block at 1/4 resolution (`quarter_depth`) |
 | `catnet-no-router` | | equal fixed branch weights |
 | `catnet-no-film` | | FFN ignores image-level context |
 | `catnet-no-gate` | | plain U-Net skips |
@@ -167,6 +171,8 @@ These runs used 24 k training patches, about 3 % of the full schedule, with a si
 | CAT-Net-S, no router | 0.9538 | 0.8395 | 0.9709 | 0.8215 | 0.9790 | 0.8409 |
 | CAT-Net-S | 0.9535 | 0.8413 | 0.9702 | 0.8207 | 0.9790 | 0.8418 |
 | CAT-Net-S + anti-collapse routing | 0.9535 | 0.8430 | 0.9699 | 0.8210 | 0.9792 | 0.8418 |
+| same, 2nd seed | 0.9531 | 0.8468 | 0.9690 | 0.8206 | 0.9790 | 0.8429 |
+| + CAT block at 1/4 (`catnet-s-q`) | 0.9529 | 0.8468 | 0.9687 | 0.8197 | 0.9789 | 0.8435 |
 
 * **The U-Net wins** on 18 of 20 images by F1.
 * **Without regularisation, the router collapses:** about 99 % of the weight goes to local attention at 1/8 and to
@@ -174,9 +180,13 @@ These runs used 24 k training patches, about 3 % of the full schedule, with a si
 * **With the anti-collapse settings, routing becomes per-pixel.** Spatial std rises from 0.007 to 0.46, all three
   branches are used, and the choices correlate with vessel density (|r| up to 0.44), not with position. F1 does not
   change (p = 0.31 vs the collapsed model).
+* **A CAT block at 1/4 resolution** gives the cleanest routing: local attention follows the vessel tree, with
+  R² = 0.48 against vessel density. Compared with a fixed equal mix of branches, it improves clDice on 18 of 20 images,
+  but F1 and AUC do not improve.
+* **Seed noise** is about 0.0004 F1 on the mean, comparable to most differences between CAT-Net variants.
 
-The full analyses are in [`results/drive_cpu/`](results/drive_cpu/README.md) and
-[`results/drive_ac/`](results/drive_ac/README.md).
+The full analyses are in [`results/drive_cpu/`](results/drive_cpu/README.md),
+[`results/drive_ac/`](results/drive_ac/README.md) and [`results/drive_q/`](results/drive_q/README.md).
 
 ### Full schedule
 
@@ -194,7 +204,7 @@ These still need GPU runs with `configs/*.json`.
 pytest -q
 ```
 
-The 37 tests cover:
+The 39 tests cover:
 
 * shape and locality of the window and grid attention;
 * that router weights form a distribution;
