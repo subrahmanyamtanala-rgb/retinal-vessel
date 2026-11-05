@@ -50,11 +50,17 @@ def test_router_weights_are_a_distribution():
 @pytest.mark.parametrize("name", MODEL_NAMES)
 def test_presets_forward(name):
     torch.manual_seed(0)
-    kw = {} if name == "catnet-s" else dict(widths=(8, 16, 16, 32, 32), depths=(1, 1), heads=(2, 2))
+    if name == "catnet-s":
+        kw = {}
+    elif name == "unet":
+        kw = dict(widths=(8, 16, 16, 32, 32))
+    else:
+        kw = dict(widths=(8, 16, 16, 32, 32), depths=(1, 1), heads=(2, 2))
     m = build_model(name, **kw)
     m.train()
     outs = m(torch.randn(2, 1, 64, 64))
-    assert isinstance(outs, list) and len(outs) == 4
+    outs = outs if isinstance(outs, list) else [outs]
+    assert len(outs) == (1 if name == "unet" else 4)
     assert all(o.shape == (2, 1, 64, 64) for o in outs)
     m.eval()
     with torch.no_grad():
@@ -78,3 +84,16 @@ def test_routing_maps_exposed():
     maps = m.routing_maps()
     assert set(maps) == {"enc4.0", "enc5.0"}
     assert maps["enc4.0"].shape == (1, 3, 16, 16)
+
+
+def test_unet_baseline_and_checkpoint_roundtrip():
+    from catnet.models import model_from_config
+
+    m = build_model("unet", widths=(8, 16, 16, 32, 32))
+    y = m(torch.randn(2, 1, 50, 70))
+    assert y.shape == (2, 1, 50, 70)
+    m2 = model_from_config(m.cfg.to_dict())
+    m2.load_state_dict(m.state_dict())
+    c = build_model("catnet-s")
+    c2 = model_from_config(c.cfg.to_dict())
+    c2.load_state_dict(c.state_dict())

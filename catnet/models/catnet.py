@@ -232,13 +232,26 @@ def build_model(name: str = "catnet", **kw) -> nn.Module:
         "catnet-global-only": dict(branches=("global",)),
         "catnet-no-strip": dict(branches=("local", "global")),
     }
+    if name == "unet":
+        from .baselines import UNet, UNetConfig
+
+        return UNet(UNetConfig(**kw))
     if name not in presets:
-        raise KeyError(f"unknown model {name!r}; choose from {sorted(presets)}")
+        raise KeyError(f"unknown model {name!r}; choose from {sorted([*presets, 'unet'])}")
     cfg = {**presets[name], **kw}
     return CATNet(CATNetConfig(**cfg))
 
 
+def model_from_config(d: dict) -> nn.Module:
+    """Rebuild a model from the ``model_cfg`` dict stored in a checkpoint."""
+    if d.get("arch") == "unet":
+        from .baselines import UNet, UNetConfig
+
+        return UNet(UNetConfig(**d))
+    return CATNet(CATNetConfig.from_dict(d))
+
+
 MODEL_NAMES = (
     "catnet", "catnet-s", "catnet-l", "catnet-no-router", "catnet-no-film", "catnet-no-gate",
-    "catnet-local-only", "catnet-global-only", "catnet-no-strip",
+    "catnet-local-only", "catnet-global-only", "catnet-no-strip", "unet",
 )

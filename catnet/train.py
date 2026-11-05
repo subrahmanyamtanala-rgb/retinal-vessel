@@ -31,7 +31,7 @@ DEFAULTS = dict(
     dataset="drive", root="data/DRIVE", out="runs/catnet", model="catnet", scale=1.0,
     patch=128, batch_size=16, samples_per_epoch=4000, epochs=200, lr=1e-3, weight_decay=0.05,
     warmup_epochs=5, w_bce=1.0, w_dice=1.0, w_cldice=0.5, val_fraction=0.1, val_every=5,
-    eval_patch=256, seed=42, workers=2, amp=True, device="auto", limit=None, model_kw={},
+    eval_patch=256, seed=42, workers=2, threads=0, amp=True, device="auto", limit=None, model_kw={},
 )
 
 
@@ -112,6 +112,8 @@ def lr_lambda(cfg, steps_per_epoch):
 def main(argv=None) -> dict:
     cfg = parse_args(argv)
     seed_everything(cfg["seed"])
+    if cfg["threads"]:
+        torch.set_num_threads(cfg["threads"])
     device = resolve_device(cfg["device"])
     out = Path(cfg["out"])
     out.mkdir(parents=True, exist_ok=True)

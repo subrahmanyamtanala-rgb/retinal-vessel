@@ -19,12 +19,12 @@ from PIL import Image
 from .data import load_split
 from .inference import sliding_window
 from .metrics import dataset_metrics
-from .models import CATNet, CATNetConfig
+from .models import model_from_config
 
 
-def load_model(ckpt_path: str, device) -> tuple[CATNet, dict]:
+def load_model(ckpt_path: str, device):
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
-    model = CATNet(CATNetConfig.from_dict(ckpt["model_cfg"])).to(device)
+    model = model_from_config(ckpt["model_cfg"]).to(device)
     model.load_state_dict(ckpt["model"])
     model.eval()
     return model, ckpt
