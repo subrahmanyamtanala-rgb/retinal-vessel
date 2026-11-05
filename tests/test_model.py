@@ -97,3 +97,50 @@ def test_unet_baseline_and_checkpoint_roundtrip():
     c = build_model("catnet-s")
     c2 = model_from_config(c.cfg.to_dict())
     c2.load_state_dict(c.state_dict())
+
+
+def test_anti_collapse_router_tools():
+    from catnet.models.cat_block import drop_one_branch, routing_regulariser
+
+    n = 3
+    uniform = torch.full((2, n, 4, 4), 1 / n)
+    collapsed = torch.zeros(2, n, 4, 4)
+    collapsed[:, 0] = 1
+    split = torch.zeros(2, n, 6, 6)  # each pixel hard-assigned, branches used equally
+    split[:, 0, :2], split[:, 1, 2:4], split[:, 2, 4:] = 1, 1, 1
+    ru, rc, rs = routing_regulariser(uniform), routing_regulariser(collapsed), routing_regulariser(split)
+    assert float(ru["balance"]) < 1e-6 and float(ru["entropy"]) > 0.99
+    assert float(rc["balance"]) == pytest.approx(n - 1) and float(rc["entropy"]) < 1e-3
+    assert float(rs["balance"]) < 1e-6 and float(rs["entropy"]) < 1e-3  # only the split minimises both
+    torch.manual_seed(0)
+    d = drop_one_branch(uniform.clone(), 1.0)
+    assert torch.allclose(d.sum(1), torch.ones(2, 4, 4))
+    assert ((d == 0).flatten(2).all(2).sum(1) == 1).all()  # exactly one branch zeroed per sample
+
+
+def test_router_loss_and_tau():
+    m = build_model("catnet-s-ac")
+    m.train()
+    m(torch.randn(2, 1, 64, 64))
+    rl = m.router_loss()
+    assert set(rl) == {"balance", "entropy"} and rl["balance"].requires_grad
+    m.set_router_tau(2.0)
+    assert all(b.router.tau == 2.0 for b in m.cat_blocks())
+    m.eval()
+    with torch.no_grad():
+        m(torch.randn(1, 1, 64, 64))
+    assert m.router_loss() is None
+
+
+def test_routing_report():
+    import numpy as np
+
+    from catnet.routing_analysis import routing_report, summary
+
+    m = build_model("catnet-s")
+    img = np.random.rand(80, 72).astype("float32")
+    lab = (np.random.rand(80, 72) > 0.8).astype("float32")
+    rep = routing_report(m, [{"image": img, "label": lab, "fov": np.ones_like(img)}])
+    assert set(rep) == {"enc4.0", "enc5.0"}
+    assert abs(sum(rep["enc4.0"]["usage"]) - 1) < 1e-3
+    assert summary(rep)["route_min_usage"] > 0

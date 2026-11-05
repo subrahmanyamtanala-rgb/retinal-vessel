@@ -216,6 +216,50 @@ class ContextAdaptiveFFN(nn.Module):
         return self.drop(self.fc2(self.drop(h)))
 
 
+# ----------------------------------------------------------- anti-collapse tools
+def drop_one_branch(w: torch.Tensor, p: float) -> torch.Tensor:
+    """With probability ``p`` per sample, zero one random branch and renormalise.
+
+    Forces every branch to stay useful, so the router cannot silently switch one off.
+    """
+    b, n = w.shape[:2]
+    hit = torch.rand(b, device=w.device) < p
+    if not hit.any():
+        return w
+    which = torch.randint(0, n, (b,), device=w.device)
+    mask = torch.ones(b, n, device=w.device, dtype=w.dtype)
+    mask[hit, which[hit]] = 0.0
+    w = w * mask[:, :, None, None]
+    return w / w.sum(1, keepdim=True).clamp_min(1e-6)
+
+
+def routing_regulariser(w: torch.Tensor) -> dict[str, torch.Tensor]:
+    """Losses on routing weights ``w`` of shape (B, n, H, W).
+
+    * ``balance``: n * sum_i m_i^2 - 1, where m_i is the mean usage of branch i over
+      the batch and all pixels. It is 0 for an even split and n - 1 when one branch takes
+      everything (Switch-Transformer style load balancing).
+    * ``entropy``: mean per-pixel entropy divided by log n, in [0, 1]. Penalising it makes
+      each pixel commit to a branch. Combined with ``balance``, the only way to make both
+      small is for *different pixels to choose different branches*.
+    """
+    n = w.shape[1]
+    m = w.mean(dim=(0, 2, 3))
+    balance = n * (m * m).sum() - 1.0
+    ent = -(w * torch.log(w.clamp_min(1e-8))).sum(1).mean() / torch.log(torch.tensor(float(n)))
+    return {"balance": balance, "entropy": ent}
+
+
+def routing_stats(w: torch.Tensor) -> dict[str, float]:
+    """Diagnostics: mean usage per branch, spatial std of the weights, and entropies."""
+    n = w.shape[1]
+    usage = w.mean(dim=(0, 2, 3))
+    spatial_std = w.flatten(2).std(dim=2).mean().item()  # 0 => same mix at every pixel
+    pix_ent = (-(w * torch.log(w.clamp_min(1e-8))).sum(1).mean() / torch.log(torch.tensor(float(n)))).item()
+    marg_ent = (-(usage * torch.log(usage.clamp_min(1e-8))).sum() / torch.log(torch.tensor(float(n)))).item()
+    return {"usage": usage.tolist(), "spatial_std": spatial_std, "pixel_entropy": pix_ent, "marginal_entropy": marg_ent}
+
+
 # --------------------------------------------------------------------------- block
 class CATBlock(nn.Module):
     """Context-Adaptive Transformer block.
@@ -249,6 +293,7 @@ class CATBlock(nn.Module):
         adaptive: bool = True,
         film: bool = True,
         layer_scale: float = 1e-2,
+        branch_drop: float = 0.0,
     ):
         super().__init__()
         unknown = set(branches) - set(self.BRANCHES)
@@ -271,7 +316,9 @@ class CATBlock(nn.Module):
         self.gamma1 = nn.Parameter(layer_scale * torch.ones(dim))
         self.gamma2 = nn.Parameter(layer_scale * torch.ones(dim))
         self.drop_path = DropPath(drop_path)
+        self.branch_drop = branch_drop
         self.last_routing: torch.Tensor | None = None  # for visualisation
+        self.routing_for_loss: torch.Tensor | None = None  # non-detached, for the router regulariser
 
     def mix(self, x: torch.Tensor) -> torch.Tensor:
         outs = [self.mixers[n](x) for n in self.branch_names]
@@ -281,6 +328,9 @@ class CATBlock(nn.Module):
             return torch.stack(outs, 0).mean(0)
         w = self.router(x)
         self.last_routing = w.detach()
+        self.routing_for_loss = w if self.training else None
+        if self.training and self.branch_drop > 0:
+            w = drop_one_branch(w, self.branch_drop)
         return sum(w[:, i : i + 1] * o for i, o in enumerate(outs))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -302,5 +352,8 @@ __all__ = [
     "StripMixer",
     "WindowAttention",
     "count_parameters",
+    "drop_one_branch",
     "global_context",
+    "routing_regulariser",
+    "routing_stats",
 ]

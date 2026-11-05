@@ -25,6 +25,7 @@ from .data import PatchDataset, load_split, write_synthetic_dataset
 from .inference import sliding_window
 from .losses import VesselLoss
 from .metrics import dataset_metrics
+from .routing_analysis import routing_report, summary as routing_summary
 from .models import MODEL_NAMES, build_model, count_parameters
 
 DEFAULTS = dict(
@@ -32,6 +33,8 @@ DEFAULTS = dict(
     patch=128, batch_size=16, samples_per_epoch=4000, epochs=200, lr=1e-3, weight_decay=0.05,
     warmup_epochs=5, w_bce=1.0, w_dice=1.0, w_cldice=0.5, val_fraction=0.1, val_every=5,
     eval_patch=256, seed=42, workers=2, threads=0, amp=True, device="auto", limit=None, model_kw={},
+    # anti-collapse routing (all off by default = original behaviour)
+    router_balance=0.0, router_entropy=0.0, router_tau_start=0.0, router_tau_end=1.0,
 )
 
 
@@ -140,16 +143,27 @@ def main(argv=None) -> dict:
     crit = VesselLoss(cfg["w_bce"], cfg["w_dice"], cfg["w_cldice"])
 
     best, history = -1.0, []
+    has_router = hasattr(model, "router_loss")
     for epoch in range(cfg["epochs"]):
         ds.set_epoch(epoch)
+        if has_router and cfg["router_tau_start"] > 0:
+            frac = epoch / max(cfg["epochs"] - 1, 1)
+            tau = cfg["router_tau_start"] + (cfg["router_tau_end"] - cfg["router_tau_start"]) * frac
+            model.set_router_tau(tau)
+            model.cfg.router_tau = tau  # saved with the checkpoint so evaluation uses the same tau
         model.train()
-        t0, run = time.time(), {"total": 0.0, "bce": 0.0, "dice": 0.0, "cldice": 0.0}
+        t0 = time.time()
+        run = {"total": 0.0, "bce": 0.0, "dice": 0.0, "cldice": 0.0, "balance": 0.0, "entropy": 0.0}
         for x, y, m in dl:
             x, y, m = x.to(device), y.to(device), m.to(device)
             with torch.autocast(device.type, dtype=torch.float16, enabled=use_amp):
                 outs = model(x)
             outs = [o.float() for o in outs] if isinstance(outs, list) else outs.float()
             loss = crit(outs, y, m)
+            rl = model.router_loss() if has_router else None
+            if rl is not None:
+                loss.update(rl)
+                loss["total"] = loss["total"] + cfg["router_balance"] * rl["balance"] + cfg["router_entropy"] * rl["entropy"]
             opt.zero_grad(set_to_none=True)
             scaler.scale(loss["total"]).backward()
             scaler.unscale_(opt)
@@ -166,6 +180,7 @@ def main(argv=None) -> dict:
         if val_items and ((epoch + 1) % cfg["val_every"] == 0 or last):
             vres, _ = evaluate(model, val_items, cfg, device)
             log.update({f"val_{k}": v for k, v in vres["mean"].items() if k in ("f1", "auc", "se", "sp", "cldice")})
+            log.update(routing_summary(routing_report(model, val_items, device)))
             score = vres["mean"]["f1"]
             if score > best:
                 best = score
@@ -182,6 +197,7 @@ def main(argv=None) -> dict:
     ckpt = torch.load(out / "best.pt", map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model"])
     tres, _ = evaluate(model, test_items, cfg, device)
+    tres["routing"] = routing_report(model, test_items, device)
     (out / "test_metrics.json").write_text(json.dumps(tres, indent=2))
     print("[test]", json.dumps({k: round(v, 4) for k, v in tres["mean"].items()}))
     return tres

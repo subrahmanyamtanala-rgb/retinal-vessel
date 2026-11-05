@@ -28,7 +28,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .cat_block import CATBlock, LayerNorm2d
+from .cat_block import CATBlock, LayerNorm2d, routing_regulariser
 
 
 class ConvBNAct(nn.Sequential):
@@ -118,6 +118,8 @@ class CATNetConfig:
     branches: tuple[str, ...] = ("local", "global", "strip")
     adaptive_routing: bool = True
     film: bool = True
+    branch_drop: float = 0.0                  # anti-collapse: per-sample branch dropout
+    router_tau: float = 1.0                   # initial router temperature (annealed by the trainer)
     gated_skips: bool = True
     deep_supervision: bool = True
     extra: dict = field(default_factory=dict)
@@ -157,7 +159,8 @@ class CATNet(nn.Module):
 
         dpr = torch.linspace(0, cfg.drop_path, sum(cfg.depths)).tolist()
         block_kw = dict(strip_kernel=cfg.strip_kernel, mlp_ratio=cfg.mlp_ratio, branches=cfg.branches,
-                        adaptive=cfg.adaptive_routing, film=cfg.film)
+                        adaptive=cfg.adaptive_routing, film=cfg.film,
+                        branch_drop=cfg.branch_drop)
         self.enc4 = TransformerStage(c3, c4, cfg.depths[0], cfg.heads[0], cfg.window, cfg.grid,
                                      dpr[: cfg.depths[0]], **block_kw)
         self.enc5 = TransformerStage(c4, c5, cfg.depths[1], cfg.heads[1], cfg.window, cfg.grid,
@@ -172,6 +175,7 @@ class CATNet(nn.Module):
         if cfg.deep_supervision:
             self.aux = nn.ModuleList([nn.Conv2d(c, cfg.num_classes, 1) for c in (c2, c3, c4)])
         self.apply(self._init)
+        self.set_router_tau(cfg.router_tau)
 
     @staticmethod
     def _init(m: nn.Module) -> None:
@@ -185,6 +189,21 @@ class CATNet(nn.Module):
     @property
     def stride(self) -> int:
         return 16
+
+    def cat_blocks(self) -> list[CATBlock]:
+        return [*self.enc4.blocks, *self.enc5.blocks]
+
+    def set_router_tau(self, tau: float) -> None:
+        for blk in self.cat_blocks():
+            if blk.router is not None:
+                blk.router.tau = tau
+
+    def router_loss(self) -> dict[str, torch.Tensor] | None:
+        """Mean routing regulariser over all CAT blocks from the last training forward."""
+        terms = [routing_regulariser(b.routing_for_loss) for b in self.cat_blocks() if b.routing_for_loss is not None]
+        if not terms:
+            return None
+        return {k: torch.stack([t[k] for t in terms]).mean() for k in terms[0]}
 
     def routing_maps(self) -> dict[str, torch.Tensor]:
         """Per-block branch weights from the last forward pass (B, n_branches, h, w)."""
@@ -224,6 +243,8 @@ def build_model(name: str = "catnet", **kw) -> nn.Module:
         "catnet": {},
         "catnet-s": dict(widths=(16, 32, 64, 128, 192), depths=(1, 1), heads=(2, 4)),
         "catnet-l": dict(widths=(48, 96, 192, 384, 512), depths=(2, 4), heads=(6, 8)),
+        # small model with anti-collapse routing (use with --router-balance/--router-entropy)
+        "catnet-s-ac": dict(widths=(16, 32, 64, 128, 192), depths=(1, 1), heads=(2, 4), branch_drop=0.15),
         # ablations
         "catnet-no-router": dict(adaptive_routing=False),
         "catnet-no-film": dict(film=False),
@@ -252,6 +273,6 @@ def model_from_config(d: dict) -> nn.Module:
 
 
 MODEL_NAMES = (
-    "catnet", "catnet-s", "catnet-l", "catnet-no-router", "catnet-no-film", "catnet-no-gate",
+    "catnet", "catnet-s", "catnet-l", "catnet-s-ac", "catnet-no-router", "catnet-no-film", "catnet-no-gate",
     "catnet-local-only", "catnet-global-only", "catnet-no-strip", "unet",
 )
