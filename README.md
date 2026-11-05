@@ -4,10 +4,15 @@ A PyTorch implementation of **CAT-Net**, a hybrid CNN/Transformer U-shaped netwo
 colour fundus photographs. Its core component is the **Context-Adaptive Transformer (CAT) block**, which lets each
 pixel choose how much local, global and directional context it uses.
 
-> **Status:** the code is complete and tested. A first real-data run on DRIVE, at about 3 % of the full training
-> schedule on CPU, is in [`results/drive_cpu/`](results/drive_cpu/README.md). In that run CAT-Net-S did **not** beat a
-> size-matched U-Net (F1 0.821 vs 0.823), and its context router collapsed to one fixed branch per stage. Full-schedule
-> GPU runs and a fix for the router are still to do.
+> **Status:** the code is complete and tested.
+>
+> * **First DRIVE run** ([`results/drive_cpu/`](results/drive_cpu/README.md)), at about 3 % of the full training
+>   schedule on CPU: CAT-Net-S did **not** beat a size-matched U-Net (F1 0.821 vs 0.823), and its context router
+>   collapsed to one fixed branch per stage.
+> * **Router fix** ([`results/drive_ac/`](results/drive_ac/README.md)): a balance loss, sharpening, temperature
+>   annealing and branch dropout fix the collapse. Routing is now per-pixel and follows the vessels, not image
+>   position. Segmentation is unchanged (F1 0.821), so the gap to the U-Net remains.
+> * **Still to do:** full-schedule GPU runs.
 
 ## Why context-adaptive?
 
@@ -121,6 +126,7 @@ Training writes `config.json`, `history.json`, `best.pt` (best validation F1), `
 | `catnet-s` | 2.9 M | small; widths 16–192, 1+1 CAT blocks |
 | `catnet` | 15.7 M | default; widths 32–320, 2+2 CAT blocks |
 | `catnet-l` | 55.2 M | large; widths 48–512, 2+4 CAT blocks |
+| `catnet-s-ac` | 2.9 M | `catnet-s` + branch dropout; use with the `--router-*` losses below |
 | `catnet-no-router` | | equal fixed branch weights |
 | `catnet-no-film` | | FFN ignores image-level context |
 | `catnet-no-gate` | | plain U-Net skips |
@@ -128,6 +134,18 @@ Training writes `config.json`, `history.json`, `best.pt` (best validation F1), `
 | `catnet-local-only` / `-global-only` / `-no-strip` | | branch ablations |
 
 Any `CATNetConfig` field can be overridden, for example `--model-kw '{"window": 4, "grid": 8}'`.
+
+Without regularisation, the router tends to collapse onto one branch per stage. The recommended anti-collapse
+settings are:
+
+```bash
+python -m catnet.train --config configs/drive.json --model catnet-s-ac \
+    --router-balance 0.1 --router-entropy 0.02 --router-tau-start 2 --router-tau-end 1
+```
+
+* `--router-balance` adds a load-balancing loss so that all branches are used.
+* `--router-entropy` sharpens each pixel's choice of branch.
+* `--router-tau-start` / `--router-tau-end` anneal the router temperature from soft to sharp over training.
 
 ## Metrics
 
@@ -148,10 +166,17 @@ These runs used 24 k training patches, about 3 % of the full schedule, with a si
 | U-Net (baseline) | 0.9538 | 0.8464 | 0.9699 | **0.8227** | **0.9801** | **0.8458** |
 | CAT-Net-S, no router | 0.9538 | 0.8395 | 0.9709 | 0.8215 | 0.9790 | 0.8409 |
 | CAT-Net-S | 0.9535 | 0.8413 | 0.9702 | 0.8207 | 0.9790 | 0.8418 |
+| CAT-Net-S + anti-collapse routing | 0.9535 | 0.8430 | 0.9699 | 0.8210 | 0.9792 | 0.8418 |
 
-The U-Net wins on 18 of 20 images by F1. The router collapses: about 99 % of the weight goes to local attention at
-1/8 and to global attention at 1/16, the same in every image. The full analysis, paired tests and next steps are in
-[`results/drive_cpu/README.md`](results/drive_cpu/README.md).
+* **The U-Net wins** on 18 of 20 images by F1.
+* **Without regularisation, the router collapses:** about 99 % of the weight goes to local attention at 1/8 and to
+  global attention at 1/16, the same in every image.
+* **With the anti-collapse settings, routing becomes per-pixel.** Spatial std rises from 0.007 to 0.46, all three
+  branches are used, and the choices correlate with vessel density (|r| up to 0.44), not with position. F1 does not
+  change (p = 0.31 vs the collapsed model).
+
+The full analyses are in [`results/drive_cpu/`](results/drive_cpu/README.md) and
+[`results/drive_ac/`](results/drive_ac/README.md).
 
 ### Full schedule
 
@@ -169,10 +194,11 @@ These still need GPU runs with `configs/*.json`.
 pytest -q
 ```
 
-The 32 tests cover:
+The 37 tests cover:
 
 * shape and locality of the window and grid attention;
 * that router weights form a distribution;
+* the anti-collapse losses, temperature and branch dropout;
 * forward and backward passes for every preset;
 * the AUC against a brute-force reference;
 * clDice and skeleton behaviour;
@@ -190,9 +216,11 @@ catnet/
   metrics.py            FOV-masked metrics, AUC, AP, clDice
   data/                 dataset discovery, preprocessing, patch sampler, synthetic generator
   inference.py          sliding-window inference with Gaussian blending and flip TTA
+  routing_analysis.py   per-block routing statistics (usage, spatial std, entropy, vessel correlation)
   train.py, evaluate.py command-line entry points
 configs/                per-dataset training configs
-scripts/                ablations, result tables, routing visualisation
+scripts/                ablations, result tables, routing visualisation and confound analysis
+results/                write-ups of the DRIVE runs
 tests/
 ```
 
