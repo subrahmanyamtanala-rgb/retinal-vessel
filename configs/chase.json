@@ -1,0 +1,6 @@
+{
+  "dataset": "chase", "root": "data/CHASE_DB1", "out": "runs/chase_catnet", "model": "catnet",
+  "patch": 128, "batch_size": 16, "samples_per_epoch": 4000, "epochs": 200,
+  "lr": 1e-3, "weight_decay": 0.05, "warmup_epochs": 5,
+  "w_bce": 1.0, "w_dice": 1.0, "w_cldice": 0.5, "val_fraction": 0.1, "val_every": 5, "eval_patch": 256
+}
