@@ -7,3 +7,4 @@ vis/
 data/
 *.pt
 .venv/
+results/**/prob/

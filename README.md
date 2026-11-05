@@ -4,8 +4,10 @@ A PyTorch implementation of **CAT-Net**, a hybrid CNN/Transformer U-shaped netwo
 colour fundus photographs. Its core component is the **Context-Adaptive Transformer (CAT) block**, which lets each
 pixel choose how much local, global and directional context it uses.
 
-> **Status:** the code is complete and tested end to end on synthetic data. No results on real datasets are
-> reported yet; the tables below are placeholders for numbers you get from `scripts/run_ablations.sh`.
+> **Status:** the code is complete and tested. A first real-data run on DRIVE, at about 3 % of the full training
+> schedule on CPU, is in [`results/drive_cpu/`](results/drive_cpu/README.md). In that run CAT-Net-S did **not** beat a
+> size-matched U-Net (F1 0.821 vs 0.823), and its context router collapsed to one fixed branch per stage. Full-schedule
+> GPU runs and a fix for the router are still to do.
 
 ## Why context-adaptive?
 
@@ -122,6 +124,7 @@ Training writes `config.json`, `history.json`, `best.pt` (best validation F1), `
 | `catnet-no-router` | | equal fixed branch weights |
 | `catnet-no-film` | | FFN ignores image-level context |
 | `catnet-no-gate` | | plain U-Net skips |
+| `unet` | | residual U-Net baseline (set widths with `--model-kw`) |
 | `catnet-local-only` / `-global-only` / `-no-strip` | | branch ablations |
 
 Any `CATNetConfig` field can be overridden, for example `--model-kw '{"window": 4, "grid": 8}'`.
@@ -135,15 +138,30 @@ validation split (`catnet.metrics.best_threshold`), never on the test set.
 
 ## Results
 
+### DRIVE, reduced CPU budget
+
+These runs used 24 k training patches, about 3 % of the full schedule, with a single seed. All models had about
+2.9 M parameters. Scores are means over the 20 test images, with flip TTA.
+
+| Model | Acc | Se | Sp | F1 | AUC | clDice |
+|---|---|---|---|---|---|---|
+| U-Net (baseline) | 0.9538 | 0.8464 | 0.9699 | **0.8227** | **0.9801** | **0.8458** |
+| CAT-Net-S, no router | 0.9538 | 0.8395 | 0.9709 | 0.8215 | 0.9790 | 0.8409 |
+| CAT-Net-S | 0.9535 | 0.8413 | 0.9702 | 0.8207 | 0.9790 | 0.8418 |
+
+The U-Net wins on 18 of 20 images by F1. The router collapses: about 99 % of the weight goes to local attention at
+1/8 and to global attention at 1/16, the same in every image. The full analysis, paired tests and next steps are in
+[`results/drive_cpu/README.md`](results/drive_cpu/README.md).
+
+### Full schedule
+
 | Dataset | Acc | Se | Sp | F1 | AUC | clDice |
 |---|---|---|---|---|---|---|
 | DRIVE | – | – | – | – | – | – |
 | CHASE_DB1 | – | – | – | – | – | – |
 | STARE | – | – | – | – | – | – |
 
-These are placeholders until the models are trained on the real datasets. On the built-in synthetic data, `catnet-s`
-trained for 15 short epochs on CPU reaches F1 0.95 and clDice 0.98. That only shows the pipeline works; it says
-nothing about clinical performance.
+These still need GPU runs with `configs/*.json`.
 
 ## Tests
 
@@ -151,7 +169,7 @@ nothing about clinical performance.
 pytest -q
 ```
 
-The 31 tests cover:
+The 32 tests cover:
 
 * shape and locality of the window and grid attention;
 * that router weights form a distribution;

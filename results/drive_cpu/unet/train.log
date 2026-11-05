@@ -1,0 +1,27 @@
+[data] train=18 val=2 test=20 device=cpu
+[model] unet: 2.92 M parameters
+{"epoch": 1, "lr": 0.0005, "time": 174.44451, "loss_total": 1.20643, "loss_bce": 0.35454, "loss_dice": 0.59635, "loss_cldice": 0.51109}
+{"epoch": 2, "lr": 0.001, "time": 174.68055, "loss_total": 0.68201, "loss_bce": 0.19566, "loss_dice": 0.34634, "loss_cldice": 0.28003}
+{"epoch": 3, "lr": 0.00099, "time": 170.28071, "loss_total": 0.57803, "loss_bce": 0.17696, "loss_dice": 0.28104, "loss_cldice": 0.24004}
+{"epoch": 4, "lr": 0.00098, "time": 177.80374, "loss_total": 0.5331, "loss_bce": 0.16832, "loss_dice": 0.25562, "loss_cldice": 0.2183, "val_se": 0.7785, "val_sp": 0.97186, "val_f1": 0.79316, "val_auc": 0.96991, "val_cldice": 0.81964}
+{"epoch": 5, "lr": 0.00095, "time": 191.19786, "loss_total": 0.53731, "loss_bce": 0.16997, "loss_dice": 0.25725, "loss_cldice": 0.22017}
+{"epoch": 6, "lr": 0.00092, "time": 176.52663, "loss_total": 0.52095, "loss_bce": 0.16203, "loss_dice": 0.25045, "loss_cldice": 0.21695}
+{"epoch": 7, "lr": 0.00088, "time": 165.15841, "loss_total": 0.52662, "loss_bce": 0.16539, "loss_dice": 0.25235, "loss_cldice": 0.21775}
+{"epoch": 8, "lr": 0.00083, "time": 162.28464, "loss_total": 0.49969, "loss_bce": 0.15851, "loss_dice": 0.23945, "loss_cldice": 0.20346, "val_se": 0.80873, "val_sp": 0.96995, "val_f1": 0.8057, "val_auc": 0.97366, "val_cldice": 0.83952}
+{"epoch": 9, "lr": 0.00077, "time": 156.3644, "loss_total": 0.49327, "loss_bce": 0.1568, "loss_dice": 0.2359, "loss_cldice": 0.20115}
+{"epoch": 10, "lr": 0.00071, "time": 156.9229, "loss_total": 0.48569, "loss_bce": 0.1557, "loss_dice": 0.23228, "loss_cldice": 0.19541}
+{"epoch": 11, "lr": 0.00064, "time": 155.76179, "loss_total": 0.48363, "loss_bce": 0.15389, "loss_dice": 0.23207, "loss_cldice": 0.19535}
+{"epoch": 12, "lr": 0.00057, "time": 156.18537, "loss_total": 0.47043, "loss_bce": 0.15003, "loss_dice": 0.22571, "loss_cldice": 0.18939, "val_se": 0.81025, "val_sp": 0.97187, "val_f1": 0.81167, "val_auc": 0.97512, "val_cldice": 0.83569}
+{"epoch": 13, "lr": 0.0005, "time": 157.16951, "loss_total": 0.4813, "loss_bce": 0.15339, "loss_dice": 0.22998, "loss_cldice": 0.19586}
+{"epoch": 14, "lr": 0.00043, "time": 156.3618, "loss_total": 0.47866, "loss_bce": 0.15328, "loss_dice": 0.22927, "loss_cldice": 0.19222}
+{"epoch": 15, "lr": 0.00036, "time": 154.31621, "loss_total": 0.46748, "loss_bce": 0.14896, "loss_dice": 0.22385, "loss_cldice": 0.18934}
+{"epoch": 16, "lr": 0.00029, "time": 154.76672, "loss_total": 0.45688, "loss_bce": 0.14619, "loss_dice": 0.21998, "loss_cldice": 0.18141, "val_se": 0.80456, "val_sp": 0.97449, "val_f1": 0.81503, "val_auc": 0.97676, "val_cldice": 0.83906}
+{"epoch": 17, "lr": 0.00023, "time": 155.34411, "loss_total": 0.46717, "loss_bce": 0.14763, "loss_dice": 0.22536, "loss_cldice": 0.18838}
+{"epoch": 18, "lr": 0.00017, "time": 155.89067, "loss_total": 0.46684, "loss_bce": 0.14694, "loss_dice": 0.22541, "loss_cldice": 0.18899}
+{"epoch": 19, "lr": 0.00012, "time": 156.12977, "loss_total": 0.46169, "loss_bce": 0.14571, "loss_dice": 0.22371, "loss_cldice": 0.18455}
+{"epoch": 20, "lr": 8e-05, "time": 157.02699, "loss_total": 0.46507, "loss_bce": 0.14823, "loss_dice": 0.22278, "loss_cldice": 0.18811, "val_se": 0.81801, "val_sp": 0.97118, "val_f1": 0.81372, "val_auc": 0.97704, "val_cldice": 0.84487}
+{"epoch": 21, "lr": 5e-05, "time": 165.81895, "loss_total": 0.46074, "loss_bce": 0.14412, "loss_dice": 0.22308, "loss_cldice": 0.18707}
+{"epoch": 22, "lr": 2e-05, "time": 165.7196, "loss_total": 0.46275, "loss_bce": 0.1462, "loss_dice": 0.22353, "loss_cldice": 0.18603}
+{"epoch": 23, "lr": 1e-05, "time": 156.84204, "loss_total": 0.44547, "loss_bce": 0.13945, "loss_dice": 0.21566, "loss_cldice": 0.18071}
+{"epoch": 24, "lr": 0.0, "time": 154.85383, "loss_total": 0.45946, "loss_bce": 0.14413, "loss_dice": 0.22302, "loss_cldice": 0.18463, "val_se": 0.81653, "val_sp": 0.97212, "val_f1": 0.81527, "val_auc": 0.97731, "val_cldice": 0.84601}
+[test] {"acc": 0.9533, "se": 0.8461, "sp": 0.9693, "precision": 0.801, "f1": 0.8208, "iou": 0.6963, "mcc": 0.7958, "g_mean": 0.9051, "auc": 0.9792, "ap": 0.9106, "cldice": 0.8441}
