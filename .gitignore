@@ -8,3 +8,4 @@ data/
 *.pt
 .venv/
 results/**/prob/
+results_*.log
