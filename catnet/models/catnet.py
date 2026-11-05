@@ -4,7 +4,7 @@
       │
       ├─ Stage 1  ConvStage           C1  @ 1/1   ─────────────── skip ─┐
       ├─ Stage 2  ConvStage           C2  @ 1/2   ─────────── skip ─┐   │
-      ├─ Stage 3  ConvStage           C3  @ 1/4   ─────── skip ─┐   │   │
+      ├─ Stage 3  ConvStage (+ optional CAT x d3) C3 @ 1/4 ── skip ─┐   │   │
       ├─ Stage 4  CAT blocks x d4     C4  @ 1/8   ─── skip ─┐   │   │   │
       └─ Stage 5  CAT blocks x d5     C5  @ 1/16 (bottleneck)│   │   │   │
                                                        up+CAG  up+CAG ...  → 1x1 → logits
@@ -12,7 +12,9 @@
 
 Shallow stages stay convolutional: at full resolution the vessels are 1-10 px wide
 and convolutions are both cheaper and better at that scale. The transformer stages
-start at 1/8, where a 128 px training patch is 16 x 16 tokens.
+start at 1/8, where a 128 px training patch is 16 x 16 tokens. Optionally
+(``quarter_depth > 0``) CAT blocks are also appended to stage 3, at 1/4 resolution,
+where thin vessels (1-3 px at full resolution) are still resolved as separate tokens.
 
 Skip connections go through a **context-adaptive gate (CAG)**: the decoder feature,
 which already carries global context, produces a spatial-and-channel gate that
@@ -109,6 +111,8 @@ class CATNetConfig:
     widths: tuple[int, int, int, int, int] = (32, 64, 128, 256, 320)
     depths: tuple[int, int] = (2, 2)          # CAT blocks at 1/8 and 1/16
     heads: tuple[int, int] = (4, 8)
+    quarter_depth: int = 0                    # CAT blocks appended to the 1/4 conv stage (0 = none)
+    quarter_heads: int = 2
     window: int = 8
     grid: int = 4
     strip_kernel: int = 11
@@ -157,14 +161,20 @@ class CATNet(nn.Module):
         self.enc2 = nn.Sequential(nn.MaxPool2d(2), ResConvBlock(c1, c2, cfg.conv_dropout), ResConvBlock(c2, c2))
         self.enc3 = nn.Sequential(nn.MaxPool2d(2), ResConvBlock(c2, c3, cfg.conv_dropout), ResConvBlock(c3, c3))
 
-        dpr = torch.linspace(0, cfg.drop_path, sum(cfg.depths)).tolist()
+        q = cfg.quarter_depth
+        dpr = torch.linspace(0, cfg.drop_path, q + sum(cfg.depths)).tolist()
         block_kw = dict(strip_kernel=cfg.strip_kernel, mlp_ratio=cfg.mlp_ratio, branches=cfg.branches,
                         adaptive=cfg.adaptive_routing, film=cfg.film,
                         branch_drop=cfg.branch_drop)
+        # optional CAT blocks at 1/4, after the conv blocks (same width, no downsampling)
+        self.enc3_cat = nn.Sequential(*[
+            CATBlock(c3, heads=cfg.quarter_heads, window=cfg.window, grid=cfg.grid, drop_path=dpr[i], **block_kw)
+            for i in range(q)
+        ])
         self.enc4 = TransformerStage(c3, c4, cfg.depths[0], cfg.heads[0], cfg.window, cfg.grid,
-                                     dpr[: cfg.depths[0]], **block_kw)
+                                     dpr[q: q + cfg.depths[0]], **block_kw)
         self.enc5 = TransformerStage(c4, c5, cfg.depths[1], cfg.heads[1], cfg.window, cfg.grid,
-                                     dpr[cfg.depths[0]:], **block_kw)
+                                     dpr[q + cfg.depths[0]:], **block_kw)
 
         g = cfg.gated_skips
         self.dec4 = DecoderStage(c5, c4, c4, g)
@@ -191,7 +201,7 @@ class CATNet(nn.Module):
         return 16
 
     def cat_blocks(self) -> list[CATBlock]:
-        return [*self.enc4.blocks, *self.enc5.blocks]
+        return [*self.enc3_cat, *self.enc4.blocks, *self.enc5.blocks]
 
     def set_router_tau(self, tau: float) -> None:
         for blk in self.cat_blocks():
@@ -208,8 +218,8 @@ class CATNet(nn.Module):
     def routing_maps(self) -> dict[str, torch.Tensor]:
         """Per-block branch weights from the last forward pass (B, n_branches, h, w)."""
         out = {}
-        for sname, stage in (("enc4", self.enc4), ("enc5", self.enc5)):
-            for i, blk in enumerate(stage.blocks):
+        for sname, blocks in (("enc3", self.enc3_cat), ("enc4", self.enc4.blocks), ("enc5", self.enc5.blocks)):
+            for i, blk in enumerate(blocks):
                 if blk.last_routing is not None:
                     out[f"{sname}.{i}"] = blk.last_routing
         return out
@@ -221,7 +231,7 @@ class CATNet(nn.Module):
             x = F.pad(x, (0, pad_w, 0, pad_h), mode="reflect")
         e1 = self.enc1(x)
         e2 = self.enc2(e1)
-        e3 = self.enc3(e2)
+        e3 = self.enc3_cat(self.enc3(e2))
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
         d4 = self.dec4(e5, e4)
@@ -245,6 +255,9 @@ def build_model(name: str = "catnet", **kw) -> nn.Module:
         "catnet-l": dict(widths=(48, 96, 192, 384, 512), depths=(2, 4), heads=(6, 8)),
         # small model with anti-collapse routing (use with --router-balance/--router-entropy)
         "catnet-s-ac": dict(widths=(16, 32, 64, 128, 192), depths=(1, 1), heads=(2, 4), branch_drop=0.15),
+        # + one CAT block at 1/4 resolution, where thin vessels are still resolved
+        "catnet-s-q": dict(widths=(16, 32, 64, 128, 192), depths=(1, 1), heads=(2, 4), branch_drop=0.15,
+                           quarter_depth=1, quarter_heads=2),
         # ablations
         "catnet-no-router": dict(adaptive_routing=False),
         "catnet-no-film": dict(film=False),
@@ -273,6 +286,6 @@ def model_from_config(d: dict) -> nn.Module:
 
 
 MODEL_NAMES = (
-    "catnet", "catnet-s", "catnet-l", "catnet-s-ac", "catnet-no-router", "catnet-no-film", "catnet-no-gate",
+    "catnet", "catnet-s", "catnet-l", "catnet-s-ac", "catnet-s-q", "catnet-no-router", "catnet-no-film", "catnet-no-gate",
     "catnet-local-only", "catnet-global-only", "catnet-no-strip", "unet",
 )

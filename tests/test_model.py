@@ -144,3 +144,18 @@ def test_routing_report():
     assert set(rep) == {"enc4.0", "enc5.0"}
     assert abs(sum(rep["enc4.0"]["usage"]) - 1) < 1e-3
     assert summary(rep)["route_min_usage"] > 0
+
+
+def test_quarter_resolution_cat_blocks():
+    import torch
+    from catnet.models import build_model
+
+    m = build_model("catnet-s-q").train()
+    out = m(torch.randn(2, 1, 64, 64))
+    assert out[0].shape == (2, 1, 64, 64)
+    maps = m.routing_maps()
+    assert set(maps) == {"enc3.0", "enc4.0", "enc5.0"}
+    assert maps["enc3.0"].shape[-2:] == (16, 16)  # 1/4 of 64
+    assert len(m.cat_blocks()) == 3 and m.router_loss() is not None
+    # default config has no quarter blocks, so old checkpoints still load
+    assert len(build_model("catnet-s").enc3_cat) == 0

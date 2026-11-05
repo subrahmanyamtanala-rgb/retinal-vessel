@@ -32,7 +32,7 @@ DEFAULTS = dict(
     dataset="drive", root="data/DRIVE", out="runs/catnet", model="catnet", scale=1.0,
     patch=128, batch_size=16, samples_per_epoch=4000, epochs=200, lr=1e-3, weight_decay=0.05,
     warmup_epochs=5, w_bce=1.0, w_dice=1.0, w_cldice=0.5, val_fraction=0.1, val_every=5,
-    eval_patch=256, seed=42, workers=2, threads=0, amp=True, device="auto", limit=None, model_kw={},
+    eval_patch=256, seed=42, split_seed=-1, workers=2, threads=0, amp=True, device="auto", limit=None, model_kw={},
     # anti-collapse routing (all off by default = original behaviour)
     router_balance=0.0, router_entropy=0.0, router_tau_start=0.0, router_tau_end=1.0,
 )
@@ -85,7 +85,8 @@ def prepare_data(cfg: dict):
         ds, root_ = cfg["dataset"], cfg["root"]
     train = load_split(ds, root_, "train", cfg["scale"], cfg["limit"])
     test = load_split(ds, root_, "test", cfg["scale"], cfg["limit"])
-    rng = np.random.default_rng(cfg["seed"])
+    # the validation split uses split_seed if given, so runs with different seeds can share one split
+    rng = np.random.default_rng(cfg["seed"] if cfg.get("split_seed", -1) < 0 else cfg["split_seed"])
     n_val = max(1, int(round(len(train) * cfg["val_fraction"]))) if len(train) > 1 and cfg["val_fraction"] > 0 else 0
     idx = rng.permutation(len(train))
     val = [train[i] for i in idx[:n_val]]
