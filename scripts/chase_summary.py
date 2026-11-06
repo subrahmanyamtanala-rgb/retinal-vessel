@@ -1,4 +1,4 @@
-"""Summarise the CHASE_DB1 cross-dataset runs with seed groups.
+"""Summarise cross-dataset runs (CHASE_DB1, STARE) with seed groups.
 
 Reads results/chase_xd/scale*/<run>/metrics.json, groups runs that differ only
 by seed, and writes a markdown table plus a JSON file with:
@@ -10,7 +10,7 @@ by seed, and writes a markdown table plus a JSON file with:
   * a "seed-robust" flag: the sign of the gap holds for every cross-seed pair
     of group means.
 
-Usage: python scripts/chase_summary.py [--root results/chase_xd]
+Usage: python scripts/chase_summary.py [--root results/chase_xd | results/stare_xd]
 """
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def main():
         runs = {g: {r: load(root, s, r) for r in rs} for g, rs in GROUPS.items()}
         runs = {g: {r: v for r, v in rs.items() if v is not None} for g, rs in runs.items()}
         res = {"groups": {}, "tests": {}}
-        md.append(f"\n### CHASE scale {s}\n")
+        md.append(f"\n### {root.name} scale {s}\n")
         md.append("| group | seeds | F1 mean ± SD (min..max) | AUC mean ± SD | clDice mean ± SD |")
         md.append("|---|---|---|---|---|")
         avg = {}
