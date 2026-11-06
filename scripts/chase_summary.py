@@ -29,11 +29,17 @@ GROUPS = {
     "ac-full": ["ac-full", "ac-full-seed7"],
     "q-norouter": ["q-norouter"],
     "q-full": ["q-full"],
+    # trained with random-zoom scale augmentation (0.5-2x), see results/scaleaug
+    "unet-saug": ["unet-saug"],
+    "no-router-saug": ["catnet-s-no-router-saug"],
+    "ac-full-saug": ["ac-full-saug"],
 }
 COMPARE = [("no-router", "unet"), ("catnet-s", "unet"), ("ac-full", "unet"),
            ("q-norouter", "unet"), ("q-full", "unet"),
            ("ac-full", "no-router"), ("catnet-s", "no-router"),
-           ("q-full", "q-norouter")]
+           ("q-full", "q-norouter"),
+           ("unet-saug", "unet"), ("no-router-saug", "no-router"), ("ac-full-saug", "ac-full"),
+           ("no-router-saug", "unet-saug"), ("ac-full-saug", "unet-saug"), ("ac-full-saug", "no-router-saug")]
 METRICS = ["f1", "auc", "cldice"]
 
 
