@@ -12,23 +12,25 @@ import numpy as np
 
 
 def roc_auc(scores: np.ndarray, labels: np.ndarray) -> float:
-    """Area under the ROC curve (Mann-Whitney U with average ranks for ties)."""
-    scores = np.asarray(scores, dtype=np.float64).ravel()
+    """Area under the ROC curve: P(s_pos > s_neg) + 0.5 * P(s_pos == s_neg) (Mann-Whitney U, ties averaged).
+
+    Counts come from sorting the negatives and binary-searching each positive, which needs far less memory
+    than ranking all scores together (this matters for the pooled AUC over whole HRF sets).
+    """
+    scores = np.asarray(scores).ravel()
+    if scores.dtype not in (np.float32, np.float64):
+        scores = scores.astype(np.float64)
     labels = np.asarray(labels).ravel().astype(bool)
     n_pos = int(labels.sum())
     n_neg = labels.size - n_pos
     if n_pos == 0 or n_neg == 0:
         return float("nan")
-    order = np.argsort(scores, kind="mergesort")
-    s = scores[order]
-    ranks = np.empty(s.size, dtype=np.float64)
-    # average ranks over ties
-    boundaries = np.flatnonzero(np.diff(s)) + 1
-    starts = np.concatenate([[0], boundaries])
-    ends = np.concatenate([boundaries, [s.size]])
-    avg = (starts + ends + 1) / 2.0  # 1-based average rank
-    ranks[order] = np.repeat(avg, ends - starts)
-    return float((ranks[labels].sum() - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg))
+    neg = np.sort(scores[~labels])
+    pos = np.sort(scores[labels])
+    below = np.searchsorted(neg, pos, side="left")
+    ties = np.searchsorted(neg, pos, side="right") - below
+    u = int(below.sum(dtype=np.int64)) + 0.5 * int(ties.sum(dtype=np.int64))
+    return float(u / (n_pos * n_neg))
 
 
 def pr_auc(scores: np.ndarray, labels: np.ndarray) -> float:
