@@ -29,15 +29,23 @@ from catnet.routing_analysis import routing_report
 
 
 def oracle_threshold(probs, items, grid=np.linspace(0.05, 0.95, 91)):
-    p = np.concatenate([pr[it["fov"] > 0.5] for pr, it in zip(probs, items)])
-    y = np.concatenate([it["label"][it["fov"] > 0.5] > 0.5 for it in items])
+    """Best pooled F1 over ``grid``. Counts come from per-image sorted FOV probabilities, which gives
+    exactly the same counts as thresholding one concatenated array, without holding it in memory."""
+    tp = np.zeros(len(grid)); npos_pred = np.zeros(len(grid)); npos = 0
+    for pr, it in zip(probs, items):
+        m = it["fov"] > 0.5
+        p = np.asarray(pr[m], dtype=np.float64)
+        y = it["label"][m] > 0.5
+        pos, allp = np.sort(p[y]), np.sort(p)
+        tp += pos.size - np.searchsorted(pos, grid, side="left")          # #(p >= t) among vessels
+        npos_pred += allp.size - np.searchsorted(allp, grid, side="left")  # #(p >= t) overall
+        npos += int(y.sum())
     best = (0.5, -1.0)
-    for t in grid:
-        pred = p >= t
-        tp = float((pred & y).sum()); fp = float((pred & ~y).sum()); fn = float((~pred & y).sum())
-        f1 = 2 * tp / max(2 * tp + fp + fn, 1)
+    for t, a, b in zip(grid, tp, npos_pred):
+        fp, fn = b - a, npos - a
+        f1 = 2 * a / max(2 * a + fp + fn, 1)
         if f1 > best[1]:
-            best = (float(t), f1)
+            best = (float(t), float(f1))
     return best
 
 
@@ -57,16 +65,19 @@ def main():
     for s in a.scales:
         test_names = {it["name"] for it in load_split(a.dataset, a.root, "test", 1.0)} if s == a.scales[0] else test_names
         items = load_split(a.dataset, a.root, "train", s) + load_split(a.dataset, a.root, "test", s)
+        for it in items:
+            it.pop("rgb", None)  # not needed here; ~3 bytes/pixel on HRF
+            it["label"], it["fov"] = it["label"].astype(np.uint8), it["fov"].astype(np.uint8)  # {0,1}: lossless
         probs = [sliding_window(model, it["image"], 256, 0.5, 8, a.tta, "cpu") for it in items]
         labels, fovs = [it["label"] for it in items], [it["fov"] for it in items]
         res = dataset_metrics(probs, labels, fovs)
         res["names"] = [it["name"] for it in items]
         idx = [i for i, it in enumerate(items) if it["name"] in test_names]
-        sub = dataset_metrics([probs[i] for i in idx], [labels[i] for i in idx], [fovs[i] for i in idx])
+        sub = dataset_metrics([probs[i] for i in idx], [labels[i] for i in idx], [fovs[i] for i in idx], pooled=False)
         res["test_split_mean"] = sub["mean"]
         t, f1 = oracle_threshold(probs, items)
         res["oracle"] = {"threshold": t, "pooled_f1": f1,
-                         "mean": dataset_metrics(probs, labels, fovs, threshold=t)["mean"]}
+                         "mean": dataset_metrics(probs, labels, fovs, threshold=t, pooled=False)["mean"]}
         res["routing"] = routing_report(model, items, "cpu")
         out = Path(a.out) / f"scale{s:g}" / a.name
         out.mkdir(parents=True, exist_ok=True)

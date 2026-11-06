@@ -101,12 +101,20 @@ def binary_metrics(prob: np.ndarray, gt: np.ndarray, fov: np.ndarray | None = No
     return {k: float(v) for k, v in out.items()}
 
 
-def dataset_metrics(probs, gts, fovs=None, threshold: float = 0.5, with_cldice: bool = True) -> dict:
+def dataset_metrics(probs, gts, fovs=None, threshold: float = 0.5, with_cldice: bool = True,
+                    pooled: bool = True) -> dict:
+    """Per-image metrics, their mean/std, and (if ``pooled``) the AUC over all pixels pooled.
+
+    The pooled AUC sorts every FOV pixel of the set at once; on large images (HRF) that dominates
+    memory, so callers that only need the per-image means can switch it off.
+    """
     fovs = fovs if fovs is not None else [None] * len(probs)
     per_image = [binary_metrics(p, g, f, threshold, with_cldice) for p, g, f in zip(probs, gts, fovs)]
     keys = per_image[0].keys() if per_image else []
     mean = {k: float(np.nanmean([m[k] for m in per_image])) for k in keys}
     std = {k: float(np.nanstd([m[k] for m in per_image])) for k in keys}
+    if not pooled:
+        return {"mean": mean, "std": std, "per_image": per_image}
     all_p = np.concatenate([np.asarray(p)[(np.asarray(f) > 0.5) if f is not None else slice(None)].ravel()
                             for p, f in zip(probs, fovs)])
     all_y = np.concatenate([(np.asarray(g) > 0.5)[(np.asarray(f) > 0.5) if f is not None else slice(None)].ravel()

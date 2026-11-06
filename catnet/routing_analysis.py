@@ -33,8 +33,8 @@ def routing_report(model, items, device="cpu") -> dict:
             w = w[0].float().cpu()  # (n, h, w), may include padding to a multiple of 16
             n, h, ww = w.shape
             hp, wp = math.ceil(H / 16) * 16, math.ceil(W / 16) * 16
-            lab = F.pad(torch.from_numpy(it["label"])[None, None], (0, wp - W, 0, hp - H))
-            fov = F.pad(torch.from_numpy(it["fov"])[None, None], (0, wp - W, 0, hp - H))
+            lab = F.pad(torch.from_numpy(np.asarray(it["label"], dtype=np.float32))[None, None], (0, wp - W, 0, hp - H))
+            fov = F.pad(torch.from_numpy(np.asarray(it["fov"], dtype=np.float32))[None, None], (0, wp - W, 0, hp - H))
             dens = F.adaptive_avg_pool2d(lab, (h, ww))[0, 0]
             inside = F.adaptive_avg_pool2d(fov, (h, ww))[0, 0] > 0.99
             if inside.sum() < 4:
