@@ -30,9 +30,9 @@ GROUPS = {
     "q-norouter": ["q-norouter"],
     "q-full": ["q-full"],
     # trained with random-zoom scale augmentation (0.5-2x), see results/scaleaug
-    "unet-saug": ["unet-saug"],
-    "no-router-saug": ["catnet-s-no-router-saug"],
-    "ac-full-saug": ["ac-full-saug"],
+    "unet-saug": ["unet-saug", "unet-saug-seed7"],
+    "no-router-saug": ["catnet-s-no-router-saug", "catnet-s-no-router-saug-seed7"],
+    "ac-full-saug": ["ac-full-saug", "ac-full-saug-seed7"],
 }
 COMPARE = [("no-router", "unet"), ("catnet-s", "unet"), ("ac-full", "unet"),
            ("q-norouter", "unet"), ("q-full", "unet"),
