@@ -20,19 +20,23 @@ pixel choose how much local, global and directional context it uses.
 >     F1 +0.10, clDice +0.13.
 >   * **STARE** ([`results/stare_xd/`](results/stare_xd/README.md)): only a 1.3× width shift. All models tie on
 >     F1 and AUC, and CAT-Nets have a small, seed-consistent clDice edge (+0.002 to +0.005).
->   * **HRF** ([`results/hrf_xd/`](results/hrf_xd)): partial results only, still running.
-> * **The adaptive router does not help under a shift.** On CHASE at native scale it saturates onto one branch (a
->   different one per seed), and a fixed equal mix of branches is the most robust variant. The robustness comes from
->   the transformer context, not from routing.
+>   * **HRF** ([`results/hrf_xd/`](results/hrf_xd/README.md)): all models tie at matched width. At a 2× width shift,
+>     which matches CHASE native, the CHASE result does **not** repeat: CAT-Net and U-Net tie on F1, and the U-Net has
+>     the better AUC. The large CHASE gap appears only where the U-Net collapses, not at every large width shift.
+> * **The adaptive router does not help under a shift.** On CHASE native and HRF 2× it saturates onto one branch per
+>   seed and is worse than a fixed equal mix of branches.
 > * **Scale-augmentation control** ([`results/scaleaug/`](results/scaleaug/README.md)): the three main models were
 >   retrained with random 0.5–2× zoom, 2 seeds each.
 >   * Augmentation **removes the U-Net's scale failure**: on CHASE at native scale its F1 goes from 0.506 to 0.758.
+>   * The same holds on HRF at 2× (+0.06 F1 for every model).
 >   * **With augmentation the CAT-Net advantage disappears.** The augmented U-Net beats both augmented CAT-Nets on
->     CHASE at every scale (F1 +0.004 to +0.007, seed-consistent).
+>     CHASE at every scale (F1 +0.004 to +0.007, seed-consistent) and ties them on HRF.
 >   * So the CAT-Nets' cross-dataset robustness was a stand-in for data augmentation, not an architectural gain on top
 >     of it.
 >   * Cost on DRIVE: F1 −0.002, clDice −0.011 to −0.017.
-> * **Still to do:** finish HRF (scales 0.5 and 0.7, and the augmented models), then full-schedule GPU runs.
+>   * **Overall:** at this budget, no CAT-Net variant beats a U-Net trained with scale augmentation, on DRIVE or on
+>     any of the three unseen datasets.
+> * **Still to do:** HRF at scale 0.5 and the single-seed variants at 0.7 (running), then full-schedule GPU runs.
 
 ## Why context-adaptive?
 
@@ -261,34 +265,30 @@ tested at native resolution.
 | CHASE @1.0 | 1.91× | 0.506 / 0.478 | **0.610** / **0.605** | 0.578 / 0.577 |
 | STARE @0.8 | 1.04× | **0.785** / 0.868 | 0.782 / 0.870 | 0.784 / **0.871** |
 | STARE @1.0 | 1.30× | **0.802** / 0.871 | 0.800 / 0.872 | **0.802** / **0.874** |
+| HRF @0.35 (no TTA) | 0.99× | 0.758 / 0.836 | 0.757 / 0.835 | **0.759** / **0.837** |
+| HRF @0.7 (no TTA) | 1.97× | 0.706 / 0.738 | **0.707** / **0.742** | 0.695 / 0.731 |
 
 * **Near the training scale the models are tied**, and the U-Net has a small, seed-stable AUC lead on CHASE
   (+0.001).
-* **The CAT-Net advantage grows with the vessel-width shift.** At CHASE native scale the fixed-mix CAT-Net beats the
-  U-Net on all 28 images (F1 +0.103, AUC +0.015, clDice +0.128), and the sign holds for every seed pair. Part of the
-  gap is calibration: at the oracle threshold the U-Net recovers to F1 0.61–0.65 against 0.66–0.68.
+* **A large CAT-Net advantage appears only on CHASE.** At CHASE native scale the fixed-mix CAT-Net beats the U-Net
+  on all 28 images (F1 +0.103, AUC +0.015, clDice +0.128), and the sign holds for every seed pair. Part of the gap is
+  calibration: at the oracle threshold the U-Net recovers to F1 0.61–0.65 against 0.66–0.68.
+* **HRF at the same width shift (2×) shows no such gap.** F1 is +0.001, not significant, and the U-Net has the better
+  AUC (+0.006, seed-consistent). There the U-Net loses only 0.05 F1 to the shift, against 0.26 on CHASE. The CAT-Net
+  advantage tracks how badly the U-Net fails, not the width shift as such.
 * **Adaptive routing is worse than a fixed mix under a large shift:** `ac-full` − fixed mix at CHASE 1.0 is
-  F1 −0.032 and AUC −0.015, on 0 of 28 images. The router saturates onto a single branch, a different one for each
-  seed. Under small shifts (STARE, CHASE 0.55) it stays mixed but brings no accuracy gain.
+  F1 −0.032 and AUC −0.015, on 0 of 28 images. On HRF at 0.7 it is F1 −0.012 (1 of 45 images). The router
+  saturates onto a single branch, the same branch per seed on both datasets. Under small shifts (STARE, CHASE 0.55,
+  HRF 0.35) it stays mixed but brings no accuracy gain.
 * **STARE is mostly a label-style shift.** Every model over-segments relative to Hoover's labels (oracle threshold
   about 0.9). The models agree with Hoover better than the second observer does: Kouznetsova scores F1 0.740.
 * **Seed noise matters under a shift:** U-Net seeds span 0.467–0.539 F1 at CHASE native scale.
 
-**HRF** (3504×2336 images; evaluated without TTA because of their size) is still running. At the matched scale 0.35,
-the first runs tie (F1 / AUC):
+HRF has 45 images at 3504×2336 px. It was evaluated without flip TTA because of the image size, and is tested at 0.35
+(matched) and 0.7 (2× shift). Native scale (2.8×) was not run.
 
-| Run | F1 | AUC |
-|---|---|---|
-| U-Net | 0.759 | 0.983 |
-| U-Net seed 123 | 0.758 | 0.983 |
-| CAT-Net-S, fixed mix | 0.762 | 0.981 |
-| `catnet-s-q`, adaptive | 0.757 | 0.983 |
-
-Scales 0.5 and 0.7 (1.4× and 2× width shifts) will show whether the CHASE pattern repeats on a third dataset, with
-and without scale augmentation.
-
-Full write-ups are in [`results/chase_xd/`](results/chase_xd/README.md) and
-[`results/stare_xd/`](results/stare_xd/README.md).
+Full write-ups are in [`results/chase_xd/`](results/chase_xd/README.md),
+[`results/stare_xd/`](results/stare_xd/README.md) and [`results/hrf_xd/`](results/hrf_xd/README.md).
 
 ### Scale-augmentation control
 
@@ -297,7 +297,7 @@ retrained with **random zoom, log-uniform in 0.5–2×**, on each training patch
 --scale-aug-max 2.0`). Everything else was unchanged, and each model has 2 seeds. Full write-up:
 [`results/scaleaug/`](results/scaleaug/README.md).
 
-**F1, mean over seeds** (DRIVE and STARE: 20 images; CHASE: 28):
+**F1, mean over seeds** (DRIVE and STARE: 20 images; CHASE: 28; HRF: 45, no TTA):
 
 | Test set | U-Net | U-Net + aug | Fixed mix | Fixed mix + aug | `ac-full` | `ac-full` + aug |
 |---|---|---|---|---|---|---|
@@ -307,20 +307,22 @@ retrained with **random zoom, log-uniform in 0.5–2×**, on each training patch
 | CHASE @1.0 (1.91×) | 0.506 | **0.758** | 0.610 | 0.754 | 0.578 | 0.752 |
 | STARE @0.8 (1.04×) | 0.785 | **0.803** | 0.782 | 0.799 | 0.784 | 0.800 |
 | STARE @1.0 (1.30×) | 0.802 | **0.807** | 0.800 | 0.806 | 0.802 | 0.805 |
+| HRF @0.35 (0.99×) | 0.758 | **0.759** | 0.757 | 0.756 | **0.759** | 0.756 |
+| HRF @0.7 (1.97×) | 0.706 | **0.768** | 0.707 | 0.767 | 0.695 | **0.768** |
 
 * **Augmentation removes the scale failure.** On CHASE at native scale the augmented U-Net gains +0.251 F1 and +0.047
-  AUC, on 28/28 images. Its best threshold returns from 0.05 to about 0.55.
+  AUC, on 28/28 images. Its best threshold returns from 0.05 to about 0.55. On HRF at 0.7 every model gains about
+  +0.06 F1, on 45/45 images.
 * **With matched training data, the U-Net is best again.** The augmented U-Net beats the augmented fixed-mix CAT-Net on
   CHASE at every scale (F1 +0.004 to +0.007, 22–27/28 images) and on STARE at 0.8 (+0.004). The sign holds for every
-  seed pair. The augmented CAT-Nets are statistically tied with each other.
+  seed pair. On HRF the three augmented models tie on F1 (within 0.0005), and the U-Net has the best AUC. The
+  augmented CAT-Nets are statistically tied with each other.
 * **Interpretation:** global and strip attention made the unaugmented CAT-Nets degrade more gracefully under an
   unseen scale. Once augmentation covers that scale, the extra context buys nothing at this budget.
 * **Routing:** the augmented `ac-full` still leans 0.64–0.73 onto one branch at CHASE native scale, towards the same
   branch each seed preferred without augmentation. It is no longer worse than a fixed mix.
 * **Cost on DRIVE** (flip TTA): F1 −0.001 to −0.002 and clDice −0.011 to −0.017. The augmented U-Net still has the
   best DRIVE F1.
-
-HRF results for the augmented models are still running.
 
 ### Full schedule
 

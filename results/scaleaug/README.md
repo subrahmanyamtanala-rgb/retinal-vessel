@@ -120,8 +120,22 @@ context buys nothing.
 
 ## HRF
 
-Pending: the HRF evaluations of the augmented models are still running. This section will be filled in when they
-finish ([`../hrf_xd`](../hrf_xd)).
+45 images, no TTA (see [`../hrf_xd`](../hrf_xd/README.md)). F1 / AUC / clDice, mean over seeds:
+
+| Scale | Width vs DRIVE | U-Net | U-Net + aug | Fixed mix | Fixed mix + aug | `ac-full` | `ac-full` + aug |
+|---|---|---|---|---|---|---|---|
+| 0.35 | 0.99× | 0.758 / .9834 / **.836** | **0.759** / **.9840** / .835 | 0.757 / .9817 / .835 | 0.756 / .9825 / .832 | **0.759** / .9823 / **.837** | 0.756 / .9832 / .834 |
+| 0.7 | 1.97× | 0.706 / .9534 / .738 | **0.768** / **.9802** / .812 | 0.707 / .9470 / .742 | 0.767 / .9774 / **.814** | 0.695 / .9336 / .731 | 0.768 / .9788 / .813 |
+
+* **Augmentation removes the shift penalty for every architecture.** At 0.7 it adds about 0.06 F1 on 45/45 images
+  (U-Net +0.062, fixed mix +0.061, `ac-full` +0.073). The augmented models score *higher* at 0.7 than at the matched
+  0.35, through better precision at 0.5.
+* **The augmented models then tie on F1 and clDice**, with differences of 0.0005 F1 or less and no significant
+  difference. The augmented U-Net keeps a seed-consistent AUC lead over the augmented fixed mix (+0.003).
+* **At matched scale augmentation does little**, as expected: F1 changes by less than 0.003.
+* HRF agrees with CHASE: once training covers the scale range, the architectures are equivalent or the U-Net is
+  slightly ahead. Unlike CHASE, HRF also shows no large CAT-Net advantage *without* augmentation. The unaugmented
+  U-Net degrades only moderately on HRF.
 
 ## Caveats
 
@@ -129,8 +143,8 @@ finish ([`../hrf_xd`](../hrf_xd)).
   clDice cost, and could change the ranking either way.
 * **Seeds:** 2 seeds per augmented model, against 2–3 for the baselines. Most of the key differences hold for every
   seed pairing. However, the augmented-model gaps are small (0.004–0.007 F1), about 2–5× the seed SD.
-* **One augmentation range:** only 0.5–2× was tried. The 1.9× CHASE shift sits near the edge of that range; a larger
-  shift (HRF at native scale is 2.8×) would fall outside it.
+* **One augmentation range:** only 0.5–2× was tried. The 1.9–2.0× shifts tested (CHASE native, HRF at 0.7) sit
+  near the edge of that range. HRF at native scale (2.8×) would fall outside it and was not run.
 * **Same evaluation code** as all other cross-dataset runs. The memory-saving changes made for HRF reproduce earlier
   outputs exactly: a full STARE rerun matched, and so did the AUC on random tied data.
 

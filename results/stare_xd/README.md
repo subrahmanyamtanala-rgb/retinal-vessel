@@ -14,7 +14,7 @@ geometry is closer to DRIVE's: vessels are 1.3× wider, compared with 1.9× on C
   For `catnet-s` and `ac-full` the difference is significant and holds for every seed pair.
 * **The large CHASE robustness gap does not appear, as predicted by the size of the shift.** STARE at native scale is
   only a 1.3× vessel-width shift. On CHASE a 1.4× shift (scale 0.75) gave a small gap, and only a 1.9× shift
-  (native) gave a large one. HRF ([`../hrf_xd`](../hrf_xd/README.md)) tests the 2× case on a third dataset.
+  (native) gave a large one. HRF ([`../hrf_xd`](../hrf_xd/README.md)) tests the 2× case on a third dataset, and does *not* show the gap.
 * **The router does not saturate here.** Branch usage stays mixed (no branch > 0.6) at both scales and for both
   `ac-full` seeds. On CHASE at native scale the router collapsed onto one branch. Router failure is a large-shift
   phenomenon.
@@ -93,6 +93,11 @@ equal, so this is an operating-point effect and not a sign that 0.8 is the wrong
 
 Near the training scale the U-Net is as good or marginally better. The transformer context pays off only as the
 apparent vessel size moves well outside the training distribution.
+
+**Update:** HRF ([`../hrf_xd`](../hrf_xd/README.md)) qualifies this. At a 1.97× width shift (HRF at 0.7), the CAT-Net
+and the U-Net tie on F1 (+0.001), and the U-Net has the better AUC. A large gap appears only where the U-Net collapses
+(CHASE native), not at every large width shift. With scale augmentation the gap disappears on CHASE and HRF alike
+([`../scaleaug`](../scaleaug/README.md)).
 
 **3. Routing stays healthy under a small shift.** Mean branch usage (local / global / strip):
 
