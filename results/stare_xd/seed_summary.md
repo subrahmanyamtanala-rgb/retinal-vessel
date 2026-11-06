@@ -8,6 +8,9 @@
 | ac-full | 2 | 0.7838 ± 0.0016 (0.7827..0.7850) | 0.9878 ± 0.0000 | 0.8712 ± 0.0005 |
 | q-norouter | 1 | 0.7839 ± 0.0000 | 0.9881 ± 0.0000 | 0.8693 ± 0.0000 |
 | q-full | 1 | 0.7792 ± 0.0000 | 0.9881 ± 0.0000 | 0.8666 ± 0.0000 |
+| unet-saug | 2 | 0.8033 ± 0.0014 (0.8023..0.8043) | 0.9890 ± 0.0001 | 0.8743 ± 0.0038 |
+| no-router-saug | 2 | 0.7994 ± 0.0006 (0.7990..0.7998) | 0.9885 ± 0.0003 | 0.8713 ± 0.0008 |
+| ac-full-saug | 2 | 0.7998 ± 0.0021 (0.7984..0.8013) | 0.9885 ± 0.0001 | 0.8715 ± 0.0005 |
 
 | comparison | metric | Δ (seed-avg) | wins/n | p (Wilcoxon) | sign holds for all seed pairs |
 |---|---|---|---|---|---|
@@ -35,6 +38,24 @@
 | q-full − q-norouter | f1 | -0.0048 | 2/20 | 1.9e-05 | yes (-0.0048..-0.0048) |
 | q-full − q-norouter | auc | +0.0000 | 11/20 | 1 | yes (+0.0000..+0.0000) |
 | q-full − q-norouter | cldice | -0.0027 | 6/20 | 0.03 | yes (-0.0027..-0.0027) |
+| unet-saug − unet | f1 | +0.0181 | 19/20 | 0.00021 | yes (+0.0154..+0.0202) |
+| unet-saug − unet | auc | +0.0008 | 14/20 | 0.011 | yes (+0.0005..+0.0010) |
+| unet-saug − unet | cldice | +0.0066 | 17/20 | 4.8e-05 | yes (+0.0030..+0.0101) |
+| no-router-saug − no-router | f1 | +0.0179 | 19/20 | 2.7e-05 | yes (+0.0138..+0.0219) |
+| no-router-saug − no-router | auc | +0.0005 | 15/20 | 0.053 | yes (+0.0002..+0.0008) |
+| no-router-saug − no-router | cldice | +0.0013 | 12/20 | 0.28 | yes (+0.0007..+0.0019) |
+| ac-full-saug − ac-full | f1 | +0.0160 | 16/20 | 0.001 | yes (+0.0134..+0.0186) |
+| ac-full-saug − ac-full | auc | +0.0007 | 15/20 | 0.053 | yes (+0.0007..+0.0008) |
+| ac-full-saug − ac-full | cldice | +0.0003 | 12/20 | 0.93 | no (-0.0004..+0.0009) |
+| no-router-saug − unet-saug | f1 | -0.0039 | 4/20 | 0.0094 | yes (-0.0054..-0.0025) |
+| no-router-saug − unet-saug | auc | -0.0005 | 6/20 | 0.0056 | yes (-0.0008..-0.0002) |
+| no-router-saug − unet-saug | cldice | -0.0029 | 5/20 | 0.03 | no (-0.0062..+0.0003) |
+| ac-full-saug − unet-saug | f1 | -0.0035 | 3/20 | 0.002 | yes (-0.0060..-0.0010) |
+| ac-full-saug − unet-saug | auc | -0.0004 | 6/20 | 0.0049 | yes (-0.0006..-0.0003) |
+| ac-full-saug − unet-saug | cldice | -0.0028 | 5/20 | 0.015 | no (-0.0058..+0.0003) |
+| ac-full-saug − no-router-saug | f1 | +0.0004 | 15/20 | 0.35 | no (-0.0015..+0.0023) |
+| ac-full-saug − no-router-saug | auc | +0.0001 | 13/20 | 0.22 | no (-0.0002..+0.0003) |
+| ac-full-saug − no-router-saug | cldice | +0.0002 | 11/20 | 0.41 | no (-0.0007..+0.0011) |
 
 ### stare_xd scale 1
 
@@ -46,6 +67,9 @@
 | ac-full | 2 | 0.8017 ± 0.0007 (0.8012..0.8022) | 0.9874 ± 0.0001 | 0.8740 ± 0.0008 |
 | q-norouter | 1 | 0.8021 ± 0.0000 | 0.9878 ± 0.0000 | 0.8726 ± 0.0000 |
 | q-full | 1 | 0.7969 ± 0.0000 | 0.9877 ± 0.0000 | 0.8683 ± 0.0000 |
+| unet-saug | 2 | 0.8072 ± 0.0014 (0.8062..0.8082) | 0.9899 ± 0.0001 | 0.8743 ± 0.0047 |
+| no-router-saug | 2 | 0.8063 ± 0.0002 (0.8062..0.8064) | 0.9893 ± 0.0002 | 0.8730 ± 0.0008 |
+| ac-full-saug | 2 | 0.8049 ± 0.0022 (0.8033..0.8064) | 0.9894 ± 0.0000 | 0.8708 ± 0.0009 |
 
 | comparison | metric | Δ (seed-avg) | wins/n | p (Wilcoxon) | sign holds for all seed pairs |
 |---|---|---|---|---|---|
@@ -73,3 +97,21 @@
 | q-full − q-norouter | f1 | -0.0052 | 2/20 | 6.3e-05 | yes (-0.0052..-0.0052) |
 | q-full − q-norouter | auc | -0.0000 | 7/20 | 0.35 | yes (-0.0000..-0.0000) |
 | q-full − q-norouter | cldice | -0.0043 | 5/20 | 0.0017 | yes (-0.0043..-0.0043) |
+| unet-saug − unet | f1 | +0.0054 | 14/20 | 0.053 | yes (+0.0036..+0.0073) |
+| unet-saug − unet | auc | +0.0018 | 18/20 | 0.00032 | yes (+0.0016..+0.0020) |
+| unet-saug − unet | cldice | +0.0038 | 15/20 | 0.0073 | no (-0.0005..+0.0087) |
+| no-router-saug − no-router | f1 | +0.0065 | 15/20 | 0.024 | yes (+0.0030..+0.0100) |
+| no-router-saug − no-router | auc | +0.0014 | 15/20 | 0.0083 | yes (+0.0012..+0.0016) |
+| no-router-saug − no-router | cldice | +0.0008 | 11/20 | 0.7 | no (-0.0007..+0.0022) |
+| ac-full-saug − ac-full | f1 | +0.0032 | 13/20 | 0.28 | yes (+0.0011..+0.0053) |
+| ac-full-saug − ac-full | auc | +0.0020 | 18/20 | 0.00085 | yes (+0.0019..+0.0021) |
+| ac-full-saug − ac-full | cldice | -0.0032 | 6/20 | 0.053 | yes (-0.0044..-0.0020) |
+| no-router-saug − unet-saug | f1 | -0.0009 | 6/20 | 0.25 | no (-0.0021..+0.0003) |
+| no-router-saug − unet-saug | auc | -0.0006 | 4/20 | 0.00059 | yes (-0.0008..-0.0005) |
+| no-router-saug − unet-saug | cldice | -0.0013 | 7/20 | 0.29 | no (-0.0052..+0.0025) |
+| ac-full-saug − unet-saug | f1 | -0.0023 | 3/20 | 0.0042 | no (-0.0049..+0.0002) |
+| ac-full-saug − unet-saug | auc | -0.0006 | 4/20 | 0.0037 | yes (-0.0006..-0.0005) |
+| ac-full-saug − unet-saug | cldice | -0.0035 | 6/20 | 0.015 | no (-0.0074..+0.0004) |
+| ac-full-saug − no-router-saug | f1 | -0.0014 | 6/20 | 0.07 | no (-0.0031..+0.0003) |
+| ac-full-saug − no-router-saug | auc | +0.0001 | 13/20 | 0.39 | no (-0.0001..+0.0002) |
+| ac-full-saug − no-router-saug | cldice | -0.0022 | 6/20 | 0.04 | yes (-0.0033..-0.0010) |
