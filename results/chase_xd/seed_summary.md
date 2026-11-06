@@ -1,4 +1,4 @@
-### CHASE scale 0.55
+### chase_xd scale 0.55
 
 | group | seeds | F1 mean ± SD (min..max) | AUC mean ± SD | clDice mean ± SD |
 |---|---|---|---|---|
@@ -36,7 +36,7 @@
 | q-full − q-norouter | auc | +0.0006 | 23/28 | 0.0022 | yes (+0.0006..+0.0006) |
 | q-full − q-norouter | cldice | -0.0018 | 7/28 | 0.0076 | yes (-0.0018..-0.0018) |
 
-### CHASE scale 0.75
+### chase_xd scale 0.75
 
 | group | seeds | F1 mean ± SD (min..max) | AUC mean ± SD | clDice mean ± SD |
 |---|---|---|---|---|
@@ -74,12 +74,12 @@
 | q-full − q-norouter | auc | -0.0004 | 9/28 | 0.066 | yes (-0.0004..-0.0004) |
 | q-full − q-norouter | cldice | +0.0005 | 19/28 | 0.48 | yes (+0.0005..+0.0005) |
 
-### CHASE scale 1
+### chase_xd scale 1
 
 | group | seeds | F1 mean ± SD (min..max) | AUC mean ± SD | clDice mean ± SD |
 |---|---|---|---|---|
-| unet | 1 | 0.4673 ± 0.0000 | 0.9180 ± 0.0000 | 0.4263 ± 0.0000 |
-| no-router | 1 | 0.6090 ± 0.0000 | 0.9440 ± 0.0000 | 0.5955 ± 0.0000 |
+| unet | 3 | 0.5064 ± 0.0363 (0.4673..0.5389) | 0.9271 ± 0.0086 | 0.4778 ± 0.0492 |
+| no-router | 2 | 0.6097 ± 0.0010 (0.6090..0.6104) | 0.9422 ± 0.0025 | 0.6053 ± 0.0138 |
 | catnet-s | 1 | 0.5899 ± 0.0000 | 0.9414 ± 0.0000 | 0.5926 ± 0.0000 |
 | ac-full | 2 | 0.5775 ± 0.0294 (0.5567..0.5983) | 0.9269 ± 0.0089 | 0.5774 ± 0.0147 |
 | q-norouter | 1 | 0.5830 ± 0.0000 | 0.9424 ± 0.0000 | 0.5724 ± 0.0000 |
@@ -87,27 +87,27 @@
 
 | comparison | metric | Δ (seed-avg) | wins/n | p (Wilcoxon) | sign holds for all seed pairs |
 |---|---|---|---|---|---|
-| no-router − unet | f1 | +0.1417 | 28/28 | 7.5e-09 | yes (+0.1417..+0.1417) |
-| no-router − unet | auc | +0.0260 | 28/28 | 7.5e-09 | yes (+0.0260..+0.0260) |
-| no-router − unet | cldice | +0.1692 | 28/28 | 7.5e-09 | yes (+0.1692..+0.1692) |
-| catnet-s − unet | f1 | +0.1226 | 28/28 | 7.5e-09 | yes (+0.1226..+0.1226) |
-| catnet-s − unet | auc | +0.0234 | 28/28 | 7.5e-09 | yes (+0.0234..+0.0234) |
-| catnet-s − unet | cldice | +0.1663 | 28/28 | 7.5e-09 | yes (+0.1663..+0.1663) |
-| ac-full − unet | f1 | +0.1102 | 28/28 | 7.5e-09 | yes (+0.0894..+0.1310) |
-| ac-full − unet | auc | +0.0089 | 24/28 | 5.5e-05 | yes (+0.0026..+0.0151) |
-| ac-full − unet | cldice | +0.1511 | 28/28 | 7.5e-09 | yes (+0.1407..+0.1615) |
-| q-norouter − unet | f1 | +0.1157 | 28/28 | 7.5e-09 | yes (+0.1157..+0.1157) |
-| q-norouter − unet | auc | +0.0244 | 28/28 | 7.5e-09 | yes (+0.0244..+0.0244) |
-| q-norouter − unet | cldice | +0.1461 | 28/28 | 7.5e-09 | yes (+0.1461..+0.1461) |
-| q-full − unet | f1 | +0.1150 | 28/28 | 7.5e-09 | yes (+0.1150..+0.1150) |
-| q-full − unet | auc | +0.0173 | 27/28 | 2.5e-07 | yes (+0.0173..+0.0173) |
-| q-full − unet | cldice | +0.1585 | 28/28 | 7.5e-09 | yes (+0.1585..+0.1585) |
-| ac-full − no-router | f1 | -0.0315 | 0/28 | 7.5e-09 | yes (-0.0523..-0.0107) |
-| ac-full − no-router | auc | -0.0171 | 0/28 | 7.5e-09 | yes (-0.0234..-0.0108) |
-| ac-full − no-router | cldice | -0.0181 | 3/28 | 1.9e-06 | yes (-0.0285..-0.0078) |
-| catnet-s − no-router | f1 | -0.0191 | 2/28 | 7.5e-08 | yes (-0.0191..-0.0191) |
-| catnet-s − no-router | auc | -0.0025 | 6/28 | 0.00042 | yes (-0.0025..-0.0025) |
-| catnet-s − no-router | cldice | -0.0029 | 14/28 | 0.49 | yes (-0.0029..-0.0029) |
+| no-router − unet | f1 | +0.1033 | 28/28 | 7.5e-09 | yes (+0.0701..+0.1431) |
+| no-router − unet | auc | +0.0151 | 28/28 | 7.5e-09 | yes (+0.0054..+0.0260) |
+| no-router − unet | cldice | +0.1275 | 28/28 | 7.5e-09 | yes (+0.0712..+0.1887) |
+| catnet-s − unet | f1 | +0.0835 | 28/28 | 7.5e-09 | yes (+0.0510..+0.1226) |
+| catnet-s − unet | auc | +0.0143 | 28/28 | 7.5e-09 | yes (+0.0064..+0.0234) |
+| catnet-s − unet | cldice | +0.1149 | 28/28 | 7.5e-09 | yes (+0.0683..+0.1663) |
+| ac-full − unet | f1 | +0.0710 | 26/28 | 3.7e-08 | yes (+0.0178..+0.1310) |
+| ac-full − unet | auc | -0.0002 | 12/28 | 0.71 | no (-0.0144..+0.0151) |
+| ac-full − unet | cldice | +0.0996 | 27/28 | 1.5e-08 | yes (+0.0427..+0.1615) |
+| q-norouter − unet | f1 | +0.0765 | 28/28 | 7.5e-09 | yes (+0.0441..+0.1157) |
+| q-norouter − unet | auc | +0.0152 | 28/28 | 7.5e-09 | yes (+0.0074..+0.0244) |
+| q-norouter − unet | cldice | +0.0947 | 28/28 | 7.5e-09 | yes (+0.0481..+0.1461) |
+| q-full − unet | f1 | +0.0759 | 28/28 | 7.5e-09 | yes (+0.0435..+0.1150) |
+| q-full − unet | auc | +0.0082 | 24/28 | 5.5e-05 | yes (+0.0003..+0.0173) |
+| q-full − unet | cldice | +0.1070 | 28/28 | 7.5e-09 | yes (+0.0605..+0.1585) |
+| ac-full − no-router | f1 | -0.0322 | 0/28 | 7.5e-09 | yes (-0.0537..-0.0107) |
+| ac-full − no-router | auc | -0.0153 | 0/28 | 7.5e-09 | yes (-0.0234..-0.0073) |
+| ac-full − no-router | cldice | -0.0279 | 0/28 | 7.5e-09 | yes (-0.0480..-0.0078) |
+| catnet-s − no-router | f1 | -0.0198 | 1/28 | 2.2e-08 | yes (-0.0205..-0.0191) |
+| catnet-s − no-router | auc | -0.0008 | 12/28 | 0.34 | no (-0.0025..+0.0010) |
+| catnet-s − no-router | cldice | -0.0126 | 3/28 | 6.6e-07 | yes (-0.0224..-0.0029) |
 | q-full − q-norouter | f1 | -0.0006 | 13/28 | 0.9 | yes (-0.0006..-0.0006) |
 | q-full − q-norouter | auc | -0.0071 | 1/28 | 2.2e-08 | yes (-0.0071..-0.0071) |
 | q-full − q-norouter | cldice | +0.0124 | 23/28 | 0.00058 | yes (+0.0124..+0.0124) |
