@@ -34,8 +34,9 @@ pixel choose how much local, global and directional context it uses.
 >   * So the CAT-Nets' cross-dataset robustness was a stand-in for data augmentation, not an architectural gain on top
 >     of it.
 >   * Cost on DRIVE: F1 −0.002, clDice −0.011 to −0.017.
->   * **Overall:** at this budget, no CAT-Net variant beats a U-Net trained with scale augmentation, on DRIVE or on
->     any of the three unseen datasets.
+>   * **Overall:** at this budget, no multi-seed CAT-Net variant beats a U-Net trained with scale augmentation, on
+>     DRIVE or on any of the three unseen datasets. The one exception is single-seed and small: `q-norouter` on HRF at
+>     matched scale, F1 0.761 vs 0.759.
 > * **Still to do:** HRF at scale 0.5 and the single-seed variants at 0.7 (running), then full-schedule GPU runs.
 
 ## Why context-adaptive?
