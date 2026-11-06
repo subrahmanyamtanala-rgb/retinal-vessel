@@ -32,7 +32,7 @@ DEFAULTS = dict(
     dataset="drive", root="data/DRIVE", out="runs/catnet", model="catnet", scale=1.0,
     patch=128, batch_size=16, samples_per_epoch=4000, epochs=200, lr=1e-3, weight_decay=0.05,
     warmup_epochs=5, w_bce=1.0, w_dice=1.0, w_cldice=0.5, val_fraction=0.1, val_every=5,
-    eval_patch=256, seed=42, split_seed=-1, workers=2, threads=0, amp=True, device="auto", limit=None, model_kw={},
+    eval_patch=256, scale_aug_min=1.0, scale_aug_max=1.0, seed=42, split_seed=-1, workers=2, threads=0, amp=True, device="auto", limit=None, model_kw={},
     # anti-collapse routing (all off by default = original behaviour)
     router_balance=0.0, router_entropy=0.0, router_tau_start=0.0, router_tau_end=1.0,
 )
@@ -125,7 +125,8 @@ def main(argv=None) -> dict:
 
     train_items, val_items, test_items = prepare_data(cfg)
     print(f"[data] train={len(train_items)} val={len(val_items)} test={len(test_items)} device={device}")
-    ds = PatchDataset(train_items, cfg["patch"], cfg["samples_per_epoch"], seed=cfg["seed"])
+    ds = PatchDataset(train_items, cfg["patch"], cfg["samples_per_epoch"], seed=cfg["seed"],
+                      scale_range=(cfg["scale_aug_min"], cfg["scale_aug_max"]))
     dl = DataLoader(ds, batch_size=cfg["batch_size"], shuffle=True, num_workers=cfg["workers"],
                     drop_last=True, pin_memory=device.type == "cuda", persistent_workers=cfg["workers"] > 0)
 

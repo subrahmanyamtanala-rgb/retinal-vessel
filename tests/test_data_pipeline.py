@@ -35,6 +35,23 @@ def test_folder_dataset_and_patches(tmp_path):
     assert torch.equal(x, x2)  # deterministic given (seed, epoch, index)
 
 
+def test_scale_augmentation(tmp_path):
+    write_synthetic_dataset(tmp_path, n_train=2, n_test=1, size=128)
+    items = load_split("folder", tmp_path, "train")
+    base = PatchDataset(items, patch=48, samples_per_epoch=40, augment=False)
+    ref = PatchDataset(items, patch=48, samples_per_epoch=40, augment=False, scale_range=(1.0, 1.0))
+    assert all(torch.equal(base[i][0], ref[i][0]) for i in range(5))  # (1, 1) = unchanged behaviour
+    zin = PatchDataset(items, patch=48, samples_per_epoch=40, augment=False, scale_range=(2.0, 2.0))
+    zout = PatchDataset(items, patch=48, samples_per_epoch=40, augment=False, scale_range=(0.5, 0.5))
+    for ds in (zin, zout):
+        x, y, m = ds[0]
+        assert x.shape == y.shape == m.shape == (1, 48, 48)
+        assert set(torch.unique(y).tolist()) <= {0.0, 1.0}
+    # zooming in by 2x roughly doubles the vessel fraction of vessel-centred crops vs zooming out by 2x
+    frac = lambda ds: float(torch.stack([ds[i][1] for i in range(40)]).mean())
+    assert frac(zin) > 1.5 * frac(zout)
+
+
 def test_drive_layout_discovery(tmp_path):
     from PIL import Image
 

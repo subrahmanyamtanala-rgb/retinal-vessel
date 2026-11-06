@@ -133,6 +133,11 @@ except Exception:  # pragma: no cover - allows metrics/preprocessing without tor
     torch, Dataset = None, object
 
 
+def _resize(a: np.ndarray, size: int, resample) -> np.ndarray:
+    return np.array(Image.fromarray(np.ascontiguousarray(a, dtype=np.float32), mode="F").resize((size, size), resample),
+                      dtype=np.float32)
+
+
 def augment(img: np.ndarray, lab: np.ndarray, fov: np.ndarray, rng: np.random.Generator):
     k = int(rng.integers(4))
     img, lab, fov = np.rot90(img, k), np.rot90(lab, k), np.rot90(fov, k)
@@ -154,8 +159,11 @@ class PatchDataset(Dataset):
     """
 
     def __init__(self, items: list[dict], patch: int = 128, samples_per_epoch: int = 2000,
-                 augment: bool = True, vessel_bias: float = 0.5, seed: int = 0):
+                 augment: bool = True, vessel_bias: float = 0.5, seed: int = 0,
+                 scale_range: tuple[float, float] = (1.0, 1.0)):
         self.items, self.patch, self.n = items, patch, samples_per_epoch
+        # random zoom, log-uniform in scale_range (>1 = zoom in = wider vessels); (1, 1) disables it
+        self.scale_range = (float(scale_range[0]), float(scale_range[1]))
         self.augment, self.vessel_bias, self.seed = augment, vessel_bias, seed
         self.epoch = 0
         self._fov_idx = [np.argwhere(it["fov"] > 0.5) for it in items]
@@ -173,16 +181,23 @@ class PatchDataset(Dataset):
         it = self.items[k]
         pool = self._ves_idx[k] if (rng.random() < self.vessel_bias and len(self._ves_idx[k])) else self._fov_idx[k]
         cy, cx = pool[int(rng.integers(len(pool)))]
+        lo, hi = self.scale_range
+        z = 1.0 if lo == hi == 1.0 else float(np.exp(rng.uniform(np.log(lo), np.log(hi))))
         p = self.patch
+        c = max(8, int(round(p / z)))  # source crop size; resized to p x p below
         H, W = it["image"].shape
-        pad = p // 2
+        pad = c // 2
         img = np.pad(it["image"], pad, mode="reflect")
         lab = np.pad(it["label"], pad)
         fov = np.pad(it["fov"], pad)
         y0 = int(np.clip(cy, 0, H - 1))
         x0 = int(np.clip(cx, 0, W - 1))
-        sl = (slice(y0, y0 + p), slice(x0, x0 + p))
+        sl = (slice(y0, y0 + c), slice(x0, x0 + c))
         img, lab, fov = img[sl], lab[sl], fov[sl]
+        if c != p:
+            img = _resize(img, p, Image.BILINEAR)
+            lab = (_resize(lab, p, Image.BILINEAR) > 0.5).astype(np.float32)
+            fov = (_resize(fov, p, Image.NEAREST) > 0.5).astype(np.float32)
         if self.augment:
             img, lab, fov = augment(img, lab, fov, rng)
         t = lambda a: torch.from_numpy(np.ascontiguousarray(a, dtype=np.float32))[None]
