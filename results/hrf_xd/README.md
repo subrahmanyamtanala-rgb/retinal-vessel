@@ -18,8 +18,10 @@ and at a 2× shift (scale 0.7) close to CHASE's native case.
 * **So the CHASE robustness gap is dataset-specific, not a law of vessel width.** On HRF the U-Net degrades
   gracefully: −0.05 F1 from 0.35 to 0.7, against −0.26 on CHASE from 0.55 to 1.0. The CAT-Net's extra context
   therefore has nothing to rescue.
+* **At an intermediate 1.4× shift (scale 0.5) everything ties** (F1 0.773–0.779).
 * **The adaptive router hurts again under the shift.**
-  * `ac-full` is the worst model at 0.7: F1 −0.012 vs the fixed mix and AUC −0.020 vs the U-Net, on 0/45 images.
+  * `ac-full` is the worst multi-seed model at 0.7: F1 −0.012 vs the fixed mix, and AUC −0.020 vs the U-Net on
+    0/45 images. The only model below it is the single-seed adaptive `q-full`.
   * Its routing saturates exactly as on CHASE: 0.76 global or 0.69 local at 1/16, depending on the seed.
 * **Scale augmentation fixes the shift for every architecture, and the architectures then tie.**
   * Trained with 0.5–2× zoom ([`../scaleaug`](../scaleaug/README.md)), each model gains about +0.06 F1 at 0.7 on
@@ -57,15 +59,36 @@ and at a 2× shift (scale 0.7) close to CHASE's native case.
 | unet | 3 | 0.7578 ± .0015 | 0.9834 ± .0002 | 0.8364 ± .0023 | 0.7057 ± .0129 | 0.9534 ± .0046 | 0.7381 ± .0044 |
 | no-router | 2 | 0.7570 ± .0066 | 0.9817 ± .0006 | 0.8354 ± .0001 | 0.7068 ± .0068 | 0.9470 ± .0010 | 0.7417 ± .0010 |
 | ac-full | 2 | 0.7590 ± .0020 | 0.9823 ± .0000 | 0.8370 ± .0010 | 0.6946 ± .0222 | 0.9336 ± .0117 | 0.7312 ± .0108 |
-| catnet-s | 1 | 0.7594 | 0.9823 | **0.8372** | pending | | |
-| q-norouter | 1 | **0.7606** | 0.9824 | 0.8354 | pending | | |
-| q-full | 1 | 0.7571 | 0.9831 | 0.8351 | pending | | |
+| catnet-s | 1 | 0.7594 | 0.9823 | **0.8372** | 0.7100 | 0.9495 | 0.7486 |
+| q-norouter | 1 | **0.7606** | 0.9824 | 0.8354 | 0.6959 | 0.9509 | 0.7358 |
+| q-full | 1 | 0.7571 | 0.9831 | 0.8351 | 0.6874 | 0.9462 | 0.7321 |
 | unet-saug | 2 | 0.7585 ± .0011 | **0.9840** ± .0001 | 0.8350 ± .0024 | **0.7678** ± .0035 | **0.9802** ± .0013 | 0.8122 ± .0061 |
 | no-router-saug | 2 | 0.7563 ± .0038 | 0.9825 ± .0002 | 0.8322 ± .0002 | 0.7673 ± .0000 | 0.9774 ± .0014 | **0.8137** ± .0033 |
 | ac-full-saug | 2 | 0.7562 ± .0029 | 0.9832 ± .0002 | 0.8335 ± .0003 | 0.7675 ± .0016 | 0.9788 ± .0008 | 0.8127 ± .0008 |
 
-Scale 0.5 and the single-seed models at 0.7 are still running. They will be added to this table, and to
-[`seed_summary.md`](seed_summary.md) and [`seed_summary.json`](seed_summary.json), when they finish.
+**Scale 0.5 (1.4× width shift):**
+
+| Group | Seeds | F1 | AUC | clDice |
+|---|---|---|---|---|
+| unet | 3 | 0.7755 ± .0018 | 0.9767 ± .0008 | 0.8233 ± .0029 |
+| no-router | 2 | 0.7749 ± .0051 | 0.9751 ± .0005 | 0.8240 ± .0000 |
+| ac-full | 2 | 0.7728 ± .0028 | 0.9738 ± .0021 | 0.8227 ± .0000 |
+| catnet-s | 1 | 0.7766 | 0.9769 | 0.8273 |
+| q-norouter | 1 | **0.7793** | 0.9777 | 0.8263 |
+| q-full | 1 | 0.7732 | 0.9771 | 0.8260 |
+| unet-saug | 2 | 0.7737 ± .0018 | **0.9836** ± .0006 | **0.8379** ± .0039 |
+| no-router-saug | 2 | 0.7752 ± .0007 | 0.9818 ± .0005 | 0.8368 ± .0016 |
+| ac-full-saug | 2 | 0.7746 ± .0030 | 0.9827 ± .0002 | 0.8374 ± .0006 |
+
+* At 0.5 every group lies within F1 0.773–0.779. No F1 difference against the U-Net is consistent across seeds,
+  except the single-seed `q-norouter` (+0.004) and `q-full` (−0.002).
+* Scale augmentation does not change F1 at 0.5. It does improve AUC (+0.007 to +0.009) and clDice (+0.013 to
+  +0.015) for every model, on 42–45 of 45 images.
+* The single-seed variants at 0.7 do not change the picture. `catnet-s` is +0.004 F1 over the U-Net, which is not
+  consistent across seeds, and it has the worse AUC. `q-norouter` (−0.010) and `q-full` (−0.018) are below the
+  U-Net, and `q-full`, the adaptive 1/4-block variant, is the worst model at 0.7.
+
+All paired tests are in [`seed_summary.md`](seed_summary.md) and [`seed_summary.json`](seed_summary.json).
 
 ### Key paired comparisons (seed-averaged, 45 images; image wins on F1)
 
@@ -88,6 +111,7 @@ U-Net, all three datasets (seed-averaged):
 | Dataset @ scale | Width vs DRIVE | U-Net F1 | ΔF1 | ΔAUC | ΔclDice |
 |---|---|---|---|---|---|
 | HRF @0.35 | 0.99× | 0.758 | −0.001 | −0.002 | −0.001 |
+| HRF @0.5 | 1.41× | 0.776 | −0.001 | −0.002 | +0.001 |
 | CHASE @0.55 | 1.05× | 0.769 | −0.004 | −0.001 | −0.002 |
 | STARE @0.8 | 1.04× | 0.785 | −0.004 | −0.000 | +0.002 |
 | STARE @1.0 | 1.30× | 0.802 | −0.002 | −0.000 | +0.002 |
@@ -126,7 +150,8 @@ This affects all architectures equally.
 
 * The pattern is the same as on CHASE: each seed saturates onto its own preferred branch, global for seed 42 and
   local for seed 7, and on the same branch on both datasets.
-* Without augmentation this costs accuracy: `ac-full` is the worst model at 0.7.
+* Without augmentation this costs accuracy. Both adaptive models are the weakest at 0.7: `ac-full` among the
+  multi-seed groups, and `q-full` overall.
 * With augmentation the lean is milder and harmless (`ac-full-saug` ties the fixed mix).
 
 ## Caveats

@@ -125,6 +125,7 @@ context buys nothing.
 | Scale | Width vs DRIVE | U-Net | U-Net + aug | Fixed mix | Fixed mix + aug | `ac-full` | `ac-full` + aug |
 |---|---|---|---|---|---|---|---|
 | 0.35 | 0.99× | 0.758 / .9834 / **.836** | **0.759** / **.9840** / .835 | 0.757 / .9817 / .835 | 0.756 / .9825 / .832 | **0.759** / .9823 / **.837** | 0.756 / .9832 / .834 |
+| 0.5 | 1.41× | **0.776** / .9767 / .823 | 0.774 / **.9836** / **.838** | 0.775 / .9751 / .824 | 0.775 / .9818 / .837 | 0.773 / .9738 / .823 | 0.775 / .9827 / .837 |
 | 0.7 | 1.97× | 0.706 / .9534 / .738 | **0.768** / **.9802** / .812 | 0.707 / .9470 / .742 | 0.767 / .9774 / **.814** | 0.695 / .9336 / .731 | 0.768 / .9788 / .813 |
 
 * **Augmentation removes the shift penalty for every architecture.** At 0.7 it adds about 0.06 F1 on 45/45 images
@@ -132,7 +133,8 @@ context buys nothing.
   0.35, through better precision at 0.5.
 * **The augmented models then tie on F1 and clDice**, with differences of 0.0005 F1 or less and no significant
   difference. The augmented U-Net keeps a seed-consistent AUC lead over the augmented fixed mix (+0.003).
-* **At matched scale augmentation does little**, as expected: F1 changes by less than 0.003.
+* **At matched scale augmentation does little**, as expected: F1 changes by less than 0.003. At 0.5 (1.4×) F1 is
+  also unchanged, but AUC (+0.007 to +0.009) and clDice (+0.013 to +0.015) improve for every model.
 * HRF agrees with CHASE: once training covers the scale range, the architectures are equivalent or the U-Net is
   slightly ahead. Unlike CHASE, HRF also shows no large CAT-Net advantage *without* augmentation. The unaugmented
   U-Net degrades only moderately on HRF.

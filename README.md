@@ -37,7 +37,7 @@ pixel choose how much local, global and directional context it uses.
 >   * **Overall:** at this budget, no multi-seed CAT-Net variant beats a U-Net trained with scale augmentation, on
 >     DRIVE or on any of the three unseen datasets. The one exception is single-seed and small: `q-norouter` on HRF at
 >     matched scale, F1 0.761 vs 0.759.
-> * **Still to do:** HRF at scale 0.5 and the single-seed variants at 0.7 (running), then full-schedule GPU runs.
+> * **Still to do:** full-schedule GPU runs.
 
 ## Why context-adaptive?
 
@@ -267,6 +267,7 @@ tested at native resolution.
 | STARE @0.8 | 1.04× | **0.785** / 0.868 | 0.782 / 0.870 | 0.784 / **0.871** |
 | STARE @1.0 | 1.30× | **0.802** / 0.871 | 0.800 / 0.872 | **0.802** / **0.874** |
 | HRF @0.35 (no TTA) | 0.99× | 0.758 / 0.836 | 0.757 / 0.835 | **0.759** / **0.837** |
+| HRF @0.5 (no TTA) | 1.41× | **0.776** / 0.823 | 0.775 / **0.824** | 0.773 / 0.823 |
 | HRF @0.7 (no TTA) | 1.97× | 0.706 / 0.738 | **0.707** / **0.742** | 0.695 / 0.731 |
 
 * **Near the training scale the models are tied**, and the U-Net has a small, seed-stable AUC lead on CHASE
@@ -286,7 +287,7 @@ tested at native resolution.
 * **Seed noise matters under a shift:** U-Net seeds span 0.467–0.539 F1 at CHASE native scale.
 
 HRF has 45 images at 3504×2336 px. It was evaluated without flip TTA because of the image size, and is tested at 0.35
-(matched) and 0.7 (2× shift). Native scale (2.8×) was not run.
+(matched), 0.5 (1.4×) and 0.7 (2× shift). Native scale (2.8×) was not run.
 
 Full write-ups are in [`results/chase_xd/`](results/chase_xd/README.md),
 [`results/stare_xd/`](results/stare_xd/README.md) and [`results/hrf_xd/`](results/hrf_xd/README.md).
@@ -309,6 +310,7 @@ retrained with **random zoom, log-uniform in 0.5–2×**, on each training patch
 | STARE @0.8 (1.04×) | 0.785 | **0.803** | 0.782 | 0.799 | 0.784 | 0.800 |
 | STARE @1.0 (1.30×) | 0.802 | **0.807** | 0.800 | 0.806 | 0.802 | 0.805 |
 | HRF @0.35 (0.99×) | 0.758 | **0.759** | 0.757 | 0.756 | **0.759** | 0.756 |
+| HRF @0.5 (1.41×) | **0.776** | 0.774 | 0.775 | 0.775 | 0.773 | 0.775 |
 | HRF @0.7 (1.97×) | 0.706 | **0.768** | 0.707 | 0.767 | 0.695 | **0.768** |
 
 * **Augmentation removes the scale failure.** On CHASE at native scale the augmented U-Net gains +0.251 F1 and +0.047
